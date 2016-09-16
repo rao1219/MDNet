@@ -1,6 +1,7 @@
 __author__ = 'stephen'
 
 import cv2
+import numpy as np
 import re, random
 import os, copy, json
 from sample import gaussian_sample
@@ -21,7 +22,7 @@ class VDBC(object):
              flush is False
              ispair is False
         """
-        self.__db_types = ['ALOV', 'OTB']
+        self.__db_types = ['ALOV', 'OTB', 'VOT']
         self.__db_path = dbpath
         self.__gt_path = gtpath
         self.__fimg = fimg
@@ -38,6 +39,8 @@ class VDBC(object):
             self.roidb_ALOV(flush)
         elif dbtype == 'OTB':
             self.roidb_OTB(flush)
+        elif dbtype == 'VOT':
+            self.roidb_VOT(flush)
 
         print 'VDBC instance built.'
 
@@ -151,6 +154,61 @@ class VDBC(object):
         self.__num_videos = len(self.__image_list)
         self.__folder_map = video_list
 
+    def roidb_VOT(self, flush):
+        """
+        Get the region of interest on VOT database.
+        VOT folder architecture should be in the form:
+        -> list.txt
+        -> folders(e.g. Basketball)
+            -> images(e.g. 0001.jpg)
+            -> ground-truth text(groundtruth_rect.txt)
+        """
+        video_list = []
+        with open(self.__db_path + os.sep + 'list.txt', "r") as db:
+            for folder in db.readlines():
+                video_list.append(folder)
+
+        # First check whether there are pre-processed json file
+        # if so, then load the files, otherwise process the database.
+        if os.path.exists(self.__fimg) and os.path.exists(self.__fgt) and not flush:
+            with open(self.__fimg, "r") as fimg:
+                self.__image_list = json.load(fimg)
+                print 'Successfully load json file {}.'.format(self.__fimg)
+            with open(self.__fgt, "r") as fgt:
+                self.__gt_info = json.load(fgt)
+                print 'Successfully load json file {}.'.format(self.__fgt)
+        else:
+            gtf = 'groundtruth.txt'
+
+            self.__image_list = {}
+            self.__gt_info = {}
+            for folder in video_list:
+                _video = self.__db_path + os.sep + folder
+                if not os.path.isdir(_video):
+                    continue
+                # __image_list of VOT is in the form of "folder : [file1_path, file2_path, ...]"
+                self.__image_list[folder] = [_video + os.sep + image for image in
+                                             os.listdir(self.__db_path + os.sep + folder)
+                                             if os.path.splitext(image)[1] == '.jpg']
+                # Read the ground-truth text file
+                raw_data = np.loadtxt(_video + os.sep + gtf, delimiter=',',
+                                      usecols=(0, 1, 2, 3, 4, 5, 6, 7), dtype=np.float)
+                # data is a list of (maxx, minx, maxy, miny)
+                data = [(max((box[0], box[2], box[4], box[6])),
+                         min((box[0], box[2], box[4], box[6])),
+                         max((box[1], box[3], box[5], box[7])),
+                         min((box[1], box[3], box[5], box[7]))) for box in raw_data]
+                # form of each line in VOT is "x y w h"
+                self.__gt_info[folder] = [(box[1], box[3], box[0] - box[1], box[2] - box[3])
+                                          for box in data]
+
+            for video in self.__image_list:
+                self.__image_list[video].sort()
+            self._save_json_text(self.__image_list, fname=self.__fimg)
+            self._save_json_text(self.__gt_info, fname=self.__fgt)
+
+        self.__num_videos = len(self.__image_list)
+        self.__folder_map = video_list
 
     def rect_box(self, box, dtype=float):
         """Transform [x1, y1, x2, y2, x3, y3, x4, y4] to [x, y, w, h]"""
@@ -212,13 +270,13 @@ class VDBC(object):
         data = {
             'path': frame,
             'img': im,
-            'gt' : gt,
+            'gt': gt,
             'samples': samples
         }
 
         return data
 
-    def build_pair_data(self, params = None, im_per_pair_frame=256):
+    def build_pair_data(self, params=None, im_per_pair_frame=256):
         """
         Build pair data according to image list in the video set.
         For each sampling strategy, number of each pair-frame sample is cfg.IMG_PAIR_PER_FRAME.
@@ -245,9 +303,9 @@ class VDBC(object):
         # draw gaussian samples
         rois = gaussian_sample(img2, gt2, params, im_per_pair_frame)
         samples = [{
-                    'box1':gt1,
-                    'box2': bbox['box'],
-                    'label': bbox['label']}
+                       'box1': gt1,
+                       'box2': bbox['box'],
+                       'label': bbox['label']}
                    for bbox in rois]
 
         pair_data = {
@@ -282,4 +340,3 @@ class VDBC(object):
         with open(fname, "r") as f:
             data = json.load(f)
         return data
-

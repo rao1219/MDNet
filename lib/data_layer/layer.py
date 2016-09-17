@@ -96,7 +96,7 @@ class DataLayer(caffe.Layer):
         layer_params = yaml.load(self.param_str_)
 
         self._batch_size = layer_params['batch_size']
-        print '[DataLayer] Batch size: {-d}.'.format(self._batch_size)
+        print '[DataLayer] Batch size: {:d}.'.format(self._batch_size)
 
         self._name_to_top_map = {}
 

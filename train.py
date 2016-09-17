@@ -6,11 +6,11 @@ from tools.solverwrapper import SolverWrapper
 
 ROOT = './'
 dbtype = 'OTB'
-dbpath = ROOT + 'data/vot2014'
-gtpath = ROOT + 'data/vot2014'
+dbpath = ROOT + 'data/OTB'
+gtpath = ROOT + 'data/OTB'
 output_dir = ROOT + 'model/'
 solver_prototxt = ROOT + 'model/solver.prototxt'
-pretrained_model = ROOT + 'model/vgg15.caffemodel'
+pretrained_model = ROOT + 'model/vgg16.caffemodel'
 
 def train_net(pretrained_model, max_iters=60000, snapshot_iters=5000):
     vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=True)

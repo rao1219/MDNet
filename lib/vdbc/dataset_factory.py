@@ -166,7 +166,7 @@ class VDBC(object):
         video_list = []
         with open(self.__db_path + os.sep + 'list.txt', "r") as db:
             for folder in db.readlines():
-                video_list.append(folder)
+                video_list.append(folder.strip())
 
         # First check whether there are pre-processed json file
         # if so, then load the files, otherwise process the database.

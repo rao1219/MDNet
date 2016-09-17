@@ -4,6 +4,54 @@ import caffe
 import yaml
 import numpy as np
 from lib.vdbc.dataset_factory import VDBC
+from lib.utils.blob import im_list_to_blob, prep_im_for_blob
+from layer_config import cfg
+
+def _get_image_blob(db, pixel_means):
+    processed_ims = []
+
+    for data in db:
+        img = data['img']
+        img = img.astype(np.float32, copy=False)
+        img -= pixel_means
+
+        for sample in data['samples']:
+            box = sample['box']
+            im = img[box[1]:box[1]+box[3], box[0]:box[0]+box[2]]
+
+            im = prep_im_for_blob(im,
+                                  cfg.TRAIN.INPUT_SIZE,
+                                  cfg.TRAIN.INPUT_SIZE)
+
+            processed_ims.append(im)
+
+    blob = im_list_to_blob(processed_ims)
+
+    return blob
+
+
+def _get_next_mini_batch(db, pixel_means=None):
+    num_images = len(db)
+
+    if pixel_means is None:
+        # It is a default pixel mean from py-faster-rcnn even though it may be not exact
+        pixel_means = np.array([[[102.9801, 115.9465, 122.7717]]])
+
+    im_blob = _get_image_blob(db, pixel_means)
+    labels_blob = np.zeros(0, dtype=np.float32)
+
+    blobs = {
+        'data': im_blob
+    }
+
+    for im_i in range(num_images):
+        labels = [sample['label'] for sample in db[im_i]['samples']]
+        labels_blob = np.hstack((labels_blob, np.array(labels)))
+
+    blobs['label'] = labels_blob
+
+    return blobs
+
 
 class DataLayer(caffe.Layer):
     """MDNet video data layer for training."""
@@ -15,13 +63,16 @@ class DataLayer(caffe.Layer):
         self._build_new_minidb()
 
     def _build_new_minidb(self):
-        # TODO: Use vdbc to generate db
+        self._db = []
+        for _ in range(cfg.TRAIN.NUM):
+            self._db.append(self._vdbc.build_data(cfg.TRAIN.PARAMS,
+                                                  cfg.TRAIN.IMS_PER_BATCH))
         self._cur = 0
         self._perm = np.random.permutation(np.arange(len(self._db)))
 
     def _get_next_minibatch_inds(self):
         """Return the roidb indices for the next minibatch."""
-        if self._cur + self._batch_size > len(self._roidb):
+        if self._cur + self._batch_size > len(self._db):
             self._build_new_minidb()
 
         db_inds = self._perm[self._cur:self._cur + self._batch_size]
@@ -35,8 +86,8 @@ class DataLayer(caffe.Layer):
         separate process and made available through self._blob_queue.
         """
         db_inds = self._get_next_minibatch_inds()
-        minibatch = [self._db[i] for i in db_inds]
-        return
+        minidb = [self._db[i] for i in db_inds]
+        return _get_next_mini_batch(minidb)
 
     def setup(self, bottom, top):
         """Setup the DataLayer."""
@@ -51,7 +102,9 @@ class DataLayer(caffe.Layer):
 
         # data blob: holds a batch of N images, each with 3 channels
         idx = 0
-        top[idx].reshape(self._batch_size, 3, 107, 107)
+        top[idx].reshape(self._batch_size, 3,
+                         cfg.TRAIN.INPUT_SIZE,
+                         cfg.TRAIN.INPUT_SIZE)
         self._name_to_top_map['data'] = idx
 
         idx += 1

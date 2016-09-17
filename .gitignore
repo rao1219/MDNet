@@ -93,3 +93,5 @@ ENV/
 data/
 model/*.caffemodel
 
+gt_info.json
+image_list.json

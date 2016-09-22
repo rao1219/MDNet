@@ -145,6 +145,9 @@ class VDBC(object):
                 # form of each line in OTB is "x y w h"
                 self.__gt_info[folder] = [(float(box[0]), float(box[1]), float(box[2]), float(box[3]))
                                           for box in gt_list]
+                min_num = min(len(self.__image_list[folder]), len(self.__gt_info[folder]))
+                self.__image_list[folder] = self.__image_list[folder][:min_num]
+                self.__gt_info[folder] = self.__gt_info[folder][:min_num]
 
             for video in self.__image_list:
                 self.__image_list[video].sort()

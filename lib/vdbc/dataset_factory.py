@@ -202,6 +202,10 @@ class VDBC(object):
                 self.__gt_info[folder] = [(box[1], box[3], box[0] - box[1], box[2] - box[3])
                                           for box in data]
 
+                min_num = min(len(self.__image_list[folder]), len(self.__gt_info[folder]))
+                self.__image_list[folder] = self.__image_list[folder][:min_num]
+                self.__gt_info[folder] = self.__gt_info[folder][:min_num]
+
             for video in self.__image_list:
                 self.__image_list[video].sort()
             self._save_json_text(self.__image_list, fname=self.__fimg)

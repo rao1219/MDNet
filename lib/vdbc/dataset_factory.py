@@ -279,6 +279,9 @@ class VDBC(object):
                 continue
 
             im = cv2.imread(frame)
+            if im is None:
+                print 'False: {}'.format(frame)
+                continue
             samples = gaussian_sample(im=im, bbox=gt, params=params, num=num)
 
             datas.append({

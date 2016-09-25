@@ -4,13 +4,14 @@ import caffe
 from lib.vdbc.dataset_factory import VDBC
 from tools.solverwrapper import SolverWrapper
 
-ROOT = './'
+ROOT = '.'
 dbtype = 'OTB'
 dbpath = ROOT + 'data/OTB'
 gtpath = ROOT + 'data/OTB'
 output_dir = ROOT + 'model/'
 solver_prototxt = ROOT + 'model/solver.prototxt'
 pretrained_model = ROOT + 'model/vgg16.caffemodel'
+
 
 def train_net(pretrained_model, max_iters=60000, snapshot_iters=5000):
     vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=True)
@@ -20,9 +21,13 @@ def train_net(pretrained_model, max_iters=60000, snapshot_iters=5000):
 
     sw.train_model(max_iters, snapshot_iters)
 
-if __name__ == '__main__':
+
+def main():
     caffe.set_mode_gpu()
 
     print 'Model training begins.'
     train_net(pretrained_model)
     print 'Model training finished.'
+
+if __name__ == '__main__':
+    main()

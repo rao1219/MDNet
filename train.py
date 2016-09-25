@@ -19,7 +19,7 @@ EXCLUDE_SET = {
 
 
 def train_net(pretrained_model, snapshot_iters=5000):
-    vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=False)
+    vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=True)
     vdbc.del_exclude(EXCLUDE_SET['vot2014'])
     print 'VDBC instance built.'
 

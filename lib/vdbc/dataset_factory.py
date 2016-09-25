@@ -287,6 +287,7 @@ class VDBC(object):
                 'gt': gt,
                 'samples': samples
             })
+        print '[VDBC] Data of video set {} is built.'.format(self.__folder_map[self._cur])
         self._cur += 1
         if self._cur == self.__num_videos:
             self._cur = 0

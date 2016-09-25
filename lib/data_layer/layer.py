@@ -7,6 +7,7 @@ from lib.vdbc.dataset_factory import VDBC
 from lib.utils.blob import im_list_to_blob, prep_im_for_blob
 from layer_config import cfg
 
+
 def _get_image_blob(db, pixel_means):
     processed_ims = []
 
@@ -16,8 +17,7 @@ def _get_image_blob(db, pixel_means):
         img -= pixel_means
 
         for sample in data['samples']:
-            box = sample['box']
-            box = list(box)
+            box = list(sample['box'])
             for i in range(len(box)):
                 box[i] = int(box[i])
             im = img[box[1]:box[1]+box[3], box[0]:box[0]+box[2]]
@@ -66,10 +66,10 @@ class DataLayer(caffe.Layer):
         self._build_new_minidb()
 
     def _build_new_minidb(self):
-        self._db = []
-        for _ in range(cfg.TRAIN.NUM):
-            self._db.append(self._vdbc.build_data(cfg.TRAIN.PARAMS,
-                                                  cfg.TRAIN.IMS_PER_BATCH))
+        """Build new mini-database."""
+        self._db = self._vdbc.build_data_in_list_order(cfg.TRAIN.PARAMS,
+                                                       cfg.TRAIN.IMS_PER_BATCH)
+        print '[DataLayer] New mini-database built.'
         self._cur = 0
         self._perm = np.random.permutation(np.arange(len(self._db)))
 

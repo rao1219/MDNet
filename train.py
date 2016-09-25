@@ -13,10 +13,21 @@ output_dir = os.path.join(ROOT, 'model')
 solver_prototxt = os.path.join(output_dir, 'solver.prototxt')
 pretrained_model = os.path.join(output_dir, 'vgg16.caffemodel')
 
+EXCLUDE_SET = {
+    'vot2014': ['Basketball', 'Bolt', 'David', 'Diving',
+                'MotorRolling', 'Skating1', 'Trellis', 'Woman']}
 
-def train_net(pretrained_model, max_iters=60000, snapshot_iters=5000):
-    vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=True)
+
+def train_net(pretrained_model, snapshot_iters=5000):
+    vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=False)
+    vdbc.del_exclude(EXCLUDE_SET['vot2014'])
     print 'VDBC instance built.'
+
+    num_frame = vdbc.get_frame_count()
+    max_iters = 100 * num_frame
+    print 'Total number of frames: {}'.format(num_frame)
+    print 'Max iterations: {}'.format(max_iters)
+
     sw = SolverWrapper(solver_prototxt, vdbc, output_dir, pretrained_model)
     print 'Initialization of SolverWrapper finished.'
 

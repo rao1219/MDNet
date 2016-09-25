@@ -35,6 +35,8 @@ class VDBC(object):
         self.__image_list = None
         self.__gt_info = None
 
+        self._cur = 0
+
         if dbtype == 'ALOV':
             self.roidb_ALOV(flush)
         elif dbtype == 'OTB':
@@ -43,6 +45,22 @@ class VDBC(object):
             self.roidb_VOT(flush)
 
         print 'VDBC instance built.'
+
+    def get_frame_count(self):
+        count = 0
+        for k in self.__image_list:
+            count += len(self.__image_list[k])
+        return count
+
+    def del_exclude(self, exclude):
+        # delete exclude set
+        for k in self.__folder_map:
+            if k in exclude:
+                del self.__image_list[k]
+                del self.__gt_info[k]
+                print '[VDBC] delete set {}'.format(k)
+        self.__folder_map = [k for k in self.__image_list]
+        self.__num_videos = len(self.__image_list)
 
     def get_db(self, order=False):
         """Get the database information. foldr map is ordered if order is true.
@@ -246,6 +264,33 @@ class VDBC(object):
                         file_list[re.split(r'\\|/', folder)[-1]] = lists
             path_list = path_list[path_num:]
         return file_list
+
+    def build_data_in_list_order(self, params, num, dtype='GAUSSIAN'):
+        """
+        Build data in the order of the list.
+        """
+        video_img = self.__image_list[self.__folder_map[self._cur]]
+        video_gt = self.__gt_info[self.__folder_map[self._cur]]
+        datas = []
+        for i in range(len(video_img)):
+            frame = video_img[i]
+            gt = video_gt[i]
+            if gt is None:
+                continue
+
+            im = cv2.imread(frame)
+            samples = gaussian_sample(im=im, bbox=gt, params=params, num=num)
+
+            datas.append({
+                'path': frame,
+                'img': im,
+                'gt': gt,
+                'samples': samples
+            })
+        self._cur += 1
+        if self._cur == self.__num_videos:
+            self._cur = 0
+        return datas
 
     def build_data(self, params, num, dtype='GAUSSIAN'):
         """

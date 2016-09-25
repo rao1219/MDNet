@@ -46,7 +46,6 @@ class SolverWrapper(object):
 
         return fname
 
-
     def train_model(self, max_iters, snapshot_iters):
         """
         Train the model with max_iters.

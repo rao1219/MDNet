@@ -1,16 +1,17 @@
 __author__ = 'stephen'
 
 import caffe
+import os
 from lib.vdbc.dataset_factory import VDBC
 from tools.solverwrapper import SolverWrapper
 
 ROOT = '.'
 dbtype = 'OTB'
-dbpath = ROOT + 'data/OTB'
-gtpath = ROOT + 'data/OTB'
-output_dir = ROOT + 'model/'
-solver_prototxt = ROOT + 'model/solver.prototxt'
-pretrained_model = ROOT + 'model/vgg16.caffemodel'
+dbpath = os.path.join(ROOT, 'data', 'OTB')
+gtpath = dbpath
+output_dir = os.path.join(ROOT, 'model')
+solver_prototxt = os.path.join(output_dir, 'solver.prototxt')
+pretrained_model = os.path.join(output_dir, 'vgg16.caffemodel')
 
 
 def train_net(pretrained_model, max_iters=60000, snapshot_iters=5000):

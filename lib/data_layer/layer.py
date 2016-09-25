@@ -17,6 +17,7 @@ def _get_image_blob(db, pixel_means):
 
         for sample in data['samples']:
             box = sample['box']
+            box = list(box)
             for i in range(len(box)):
                 box[i] = int(box[i])
             im = img[box[1]:box[1]+box[3], box[0]:box[0]+box[2]]

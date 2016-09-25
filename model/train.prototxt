@@ -167,6 +167,8 @@ layer {
   type: "InnerProduct"
   bottom: "pool3"
   top: "fc4"
+  param {lr_mult: 10}
+  param {lr_mult: 20}
   inner_product_param {
     num_output: 512
     weight_filler{
@@ -197,6 +199,8 @@ layer {
   type: "InnerProduct"
   bottom: "fc4"
   top: "fc5"
+  param {lr_mult: 10}
+  param {lr_mult: 20}
   inner_product_param {
     num_output: 512
   }
@@ -221,6 +225,8 @@ layer {
   type: "InnerProduct"
   bottom: "fc5"
   top: "cls_score"
+  param {lr_mult: 10}
+  param {lr_mult: 20}
   inner_product_param {
     num_output: 2
     weight_filler {

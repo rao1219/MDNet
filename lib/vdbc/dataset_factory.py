@@ -264,7 +264,6 @@ class VDBC(object):
 
             frame = video_img[rd_img]
             im_index = self._get_im_index(frame)
-            print self.__folder_map[rd_video], frame, im_index
             gt = self.__gt_info[self.__folder_map[rd_video]][im_index]
             if gt is None:
                 continue

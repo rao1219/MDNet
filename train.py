@@ -18,13 +18,13 @@ EXCLUDE_SET = {
                 'MotorRolling', 'Skating1', 'Trellis', 'Woman']}
 
 
-def train_net(pretrained_model, snapshot_iters=5000):
+def train_net(pretrained_model, snapshot_iters=10000):
     vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=True)
     vdbc.del_exclude(EXCLUDE_SET['vot2014'])
     print 'VDBC instance built.'
 
     num_frame = vdbc.get_frame_count()
-    max_iters = 100 * num_frame
+    max_iters = 5 * num_frame
     print 'Total number of frames: {}'.format(num_frame)
     print 'Max iterations: {}'.format(max_iters)
 

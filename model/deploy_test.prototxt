@@ -263,7 +263,7 @@ layer {
 layer {
   name: "fc5"
   type: "InnerProduct"
-  bottom: "fc5"
+  bottom: "fc4"
   top: "fc5"
   param {
     lr_mult: 1

@@ -14,4 +14,4 @@ __C.TRAIN.INPUT_SIZE = 107
 # 256 samples for each image
 __C.TRAIN.IMS_PER_BATCH = 64
 
-__C.TRAIN.PARAMS = (0.2, 0.2, 0.05, 0.7, 0.5)
+__C.TRAIN.PARAMS = (0.2, 0.2, 0.05, 0.7, 0.3)

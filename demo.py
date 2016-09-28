@@ -52,6 +52,30 @@ def get_solver_net(train, test, weights):
 
 def evaluate(evl, solver, net):
     im_path, gt = evl.init_frame()
+    im_path = evl.next_frame()
+    im = cv2.imread(im_path)
+    samples = gaussian_sample(im, gt, PARAMS, 64)
+    db = [{
+              'path': im_path,
+              'img': im,
+              'gt': gt,
+              'samples': [samples[0]]
+          }]
+    db2 = [{
+'path':im_path,
+'img':im,
+'gt':gt,
+'samples':[samples[1]]
+          }]
+    blob = get_next_mini_batch(db)
+    print blob['label']
+    blob = {'data': blob['data']}
+
+    net.blobs['data'].reshape(*blob['data'].shape)
+
+    out = net.forward(**blob)['cls_prob']
+    print out
+    
 
     def initialize():
         im = cv2.imread(im_path)
@@ -72,29 +96,20 @@ def evaluate(evl, solver, net):
     # Initialize the net with the first frame
     initialize()
 
-    for i in range(1):
-        im_path = evl.next_frame()
-        im = cv2.imread(im_path)
-        samples = gaussian_sample(im, gt, PARAMS, 64)
-        db = [{
-            'path': im_path,
-            'img': im,
-            'gt': gt,
-            'samples': samples
-        }]
-        blob = get_next_mini_batch(db)
-        print blob['label']
-        blob = {'data': blob['data']}
+    net.blobs['data'].reshape(*blob['data'].shape)
 
-        net.blobs['data'].reshape(*blob['data'].shape)
-
-        out = net.forward(**blob)['cls_prob']
-        print out
+    out = net.forward(**blob)['cls_prob']
+    print out
+    blob = get_next_mini_batch(db2)
+    blob = {'data': blob['data']}
+    net.blobs['data'].reshape(*blob['data'].shape)
+    out = net.forward(**blob)['cls_prob']
+    print out
 
 
 if __name__ == '__main__':
     caffe.set_mode_gpu()
-
+    caffe.set_device(1)
     # get the deploy solver and net with pre-trained caffe model
     train = os.path.join('model', 'deploy_solver.prototxt')
     test = os.path.join('model', 'deploy_test.prototxt')

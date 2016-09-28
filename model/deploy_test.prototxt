@@ -183,15 +183,6 @@ layer {
   top: "fc4"
 }
 layer {
-  name: "drop4"
-  type: "Dropout"
-  bottom: "fc4"
-  top: "fc4"
-  dropout_param {
-    dropout_ratio: 0.5
-  }
-}
-layer {
   name: "fc5"
   type: "InnerProduct"
   bottom: "fc4"
@@ -205,15 +196,6 @@ layer {
   type: "ReLU"
   bottom: "fc5"
   top: "fc5"
-}
-layer {
-  name: "drop5"
-  type: "Dropout"
-  bottom: "fc5"
-  top: "fc5"
-  dropout_param {
-    dropout_ratio: 0.5
-  }
 }
 layer {
   name: "cls_score"

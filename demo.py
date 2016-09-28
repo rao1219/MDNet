@@ -7,9 +7,9 @@ from lib.vdbc.dataset_factory import VDBC
 from lib.vdbc.evaluate import Evaluator
 from lib.vdbc.sample import gaussian_sample
 
-from lib.data_layer.layer import get_image_blob, get_next_mini_batch
+from lib.data_layer.layer import get_next_mini_batch
 
-PARAMS = (0.2, 0.2, 0.05, 0.7, 0.5)
+PARAMS = (0.3, 0.3, 0.05, 0.7, 0.3)
 
 
 def vis_detection(im_path, gt, box):
@@ -55,14 +55,16 @@ def evaluate(evl, solver, net):
 
     def initialize():
         im = cv2.imread(im_path)
-        samples = gaussian_sample(im, gt, PARAMS, 5500)
-
-        solver.net.layers[0].get_roidb([{
+        db = []
+        for i in range(30):
+            samples = gaussian_sample(im, gt, PARAMS, 64)
+            db.append({
             'path': im_path,
             'img': im,
             'gt': gt,
             'samples': samples
-        }])
+            })
+        solver.net.layers[0].get_db(db)
         solver.step(30)
 
     scores = []
@@ -70,10 +72,10 @@ def evaluate(evl, solver, net):
     # Initialize the net with the first frame
     initialize()
 
-    for i in range(20):
+    for i in range(1):
         im_path = evl.next_frame()
         im = cv2.imread(im_path)
-        samples = gaussian_sample(im, gt, PARAMS, 250)
+        samples = gaussian_sample(im, gt, PARAMS, 64)
         db = [{
             'path': im_path,
             'img': im,
@@ -81,9 +83,9 @@ def evaluate(evl, solver, net):
             'samples': samples
         }]
         blob = get_next_mini_batch(db)
+        blob = {'data': blob['data']}
 
         net.blobs['data'].reshape(*blob['data'].shape)
-        net.blobs['label'].reshape(*blob['label'].shape)
 
         out = net.forward(**blob)['cls_prob']
         print out
@@ -95,7 +97,7 @@ if __name__ == '__main__':
     # get the deploy solver and net with pre-trained caffe model
     train = os.path.join('model', 'deploy_solver.prototxt')
     test = os.path.join('model', 'deploy_test.prototxt')
-    weights = os.path.join('model', 'MDNet_iter_100000.caffemodel')
+    weights = os.path.join('model', 'MDNet_iter_80000.caffemodel')
 
     solver, net = get_solver_net(train, test, weights)
 
@@ -107,14 +109,6 @@ if __name__ == '__main__':
     vdbc = VDBC(dbtype=dtype, dbpath=dbpath, gtpath=gtpath, flush=True)
 
     evl = Evaluator(vdbc)
-    evl.set_video(0)
+    evl.set_video(1)
 
     evaluate(evl, solver, net)
-
-
-
-
-
-
-
-

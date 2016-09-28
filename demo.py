@@ -5,6 +5,11 @@ import cv2, os
 import matplotlib.pyplot as plt
 from lib.vdbc.dataset_factory import VDBC
 from lib.vdbc.evaluate import Evaluator
+from lib.vdbc.sample import gaussian_sample
+
+from lib.data_layer.layer import get_image_blob, get_next_mini_batch
+
+PARAMS = (0.2, 0.2, 0.05, 0.7, 0.5)
 
 
 def vis_detection(im_path, gt, box):
@@ -44,6 +49,46 @@ def get_solver_net(train, test, weights):
 
     return solver, net
 
+
+def evaluate(evl, solver, net):
+    im_path, gt = evl.init_frame()
+
+    def initialize():
+        im = cv2.imread(im_path)
+        samples = gaussian_sample(im, gt, PARAMS, 5500)
+
+        solver.net.layers[0].get_roidb([{
+            'path': im_path,
+            'img': im,
+            'gt': gt,
+            'samples': samples
+        }])
+        solver.step(30)
+
+    scores = []
+
+    # Initialize the net with the first frame
+    initialize()
+
+    for i in range(20):
+        im_path = evl.next_frame()
+        im = cv2.imread(im_path)
+        samples = gaussian_sample(im, gt, PARAMS, 250)
+        db = [{
+            'path': im_path,
+            'img': im,
+            'gt': gt,
+            'samples': samples
+        }]
+        blob = get_next_mini_batch(db)
+
+        net.blobs['data'].reshape(*blob['data'].shape)
+        net.blobs['label'].reshape(*blob['label'].shape)
+
+        out = net.forward(**blob)['cls_prob']
+        print out
+
+
 if __name__ == '__main__':
     caffe.set_mode_gpu()
 
@@ -62,6 +107,11 @@ if __name__ == '__main__':
     vdbc = VDBC(dbtype=dtype, dbpath=dbpath, gtpath=gtpath, flush=True)
 
     evl = Evaluator(vdbc)
+    evl.set_video(0)
+
+    evaluate(evl, solver, net)
+
+
 
 
 

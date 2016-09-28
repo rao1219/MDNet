@@ -8,7 +8,7 @@ from lib.utils.blob import im_list_to_blob, prep_im_for_blob
 from layer_config import cfg
 
 
-def _get_image_blob(db, pixel_means):
+def get_image_blob(db, pixel_means):
     processed_ims = []
 
     for data in db:
@@ -33,14 +33,14 @@ def _get_image_blob(db, pixel_means):
     return blob
 
 
-def _get_next_mini_batch(db, pixel_means=None):
+def get_next_mini_batch(db, pixel_means=None):
     num_images = len(db)
 
     if pixel_means is None:
         # It is a default pixel mean from py-faster-rcnn even though it may be not exact
         pixel_means = np.array([[[102.9801, 115.9465, 122.7717]]])
 
-    im_blob = _get_image_blob(db, pixel_means)
+    im_blob = get_image_blob(db, pixel_means)
     labels_blob = np.zeros(0, dtype=np.float32)
 
     blobs = {
@@ -59,6 +59,13 @@ def _get_next_mini_batch(db, pixel_means=None):
 class DataLayer(caffe.Layer):
     """MDNet video data layer for training."""
 
+    def get_db(self, db):
+        self._db = db
+        self._vdbc = None # unset VDBC instance
+        self._cur = 0
+        self._perm = np.random.permutation(np.arange(len(self._db)))
+        print '[DataLayer] Get the database.'
+
     def get_VDBC(self, vdbc):
         """Get VDBC instance."""
         assert isinstance(vdbc, VDBC), "It is not a VDBC instance."
@@ -76,7 +83,11 @@ class DataLayer(caffe.Layer):
     def _get_next_minibatch_inds(self):
         """Return the roidb indices for the next minibatch."""
         if self._cur + self._batch_size > len(self._db):
-            self._build_new_minidb()
+            if self._vdbc is not None:
+                self._build_new_minidb()
+            else:
+                self._cur = 0
+                self._perm = np.random.permutation(np.arange(len(self._db)))
 
         db_inds = self._perm[self._cur:self._cur + self._batch_size]
         self._cur += self._batch_size
@@ -90,7 +101,7 @@ class DataLayer(caffe.Layer):
         """
         db_inds = self._get_next_minibatch_inds()
         minidb = [self._db[i] for i in db_inds]
-        return _get_next_mini_batch(minidb)
+        return get_next_mini_batch(minidb)
 
     def setup(self, bottom, top):
         """Setup the DataLayer."""

@@ -83,6 +83,7 @@ def evaluate(evl, solver, net):
             'samples': samples
         }]
         blob = get_next_mini_batch(db)
+        print blob['label']
         blob = {'data': blob['data']}
 
         net.blobs['data'].reshape(*blob['data'].shape)

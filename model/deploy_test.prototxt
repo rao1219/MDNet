@@ -58,7 +58,6 @@ layer {
   type: "Convolution"
   bottom: "pool1"
   top: "conv2_1"
-  param {lr_mult: 0}
   convolution_param {
     num_output: 128
     pad: 1
@@ -76,7 +75,6 @@ layer {
   type: "Convolution"
   bottom: "conv2_1"
   top: "conv2_2"
-  param {lr_mult: 0}
   convolution_param {
     num_output: 128
     pad: 1
@@ -105,7 +103,6 @@ layer {
   type: "Convolution"
   bottom: "pool2"
   top: "conv3_1"
-  param {lr_mult: 0}
   convolution_param {
     num_output: 256
     pad: 1
@@ -141,7 +138,6 @@ layer {
   type: "Convolution"
   bottom: "conv3_2"
   top: "conv3_3"
-  param {lr_mult: 0}
   convolution_param {
     num_output: 256
     pad: 1
@@ -170,8 +166,6 @@ layer {
   type: "InnerProduct"
   bottom: "pool3"
   top: "fc4"
-  param {lr_mult: 10}
-  param {lr_mult: 20}
   inner_product_param {
     num_output: 512
     weight_filler{
@@ -202,8 +196,6 @@ layer {
   type: "InnerProduct"
   bottom: "fc4"
   top: "fc5"
-  param {lr_mult: 10}
-  param {lr_mult: 20}
   inner_product_param {
     num_output: 512
   }
@@ -228,8 +220,6 @@ layer {
   type: "InnerProduct"
   bottom: "fc5"
   top: "cls_score"
-  param {lr_mult: 100}
-  param {lr_mult: 200}
   inner_product_param {
     num_output: 2
     weight_filler {

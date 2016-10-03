@@ -56,17 +56,17 @@ def evaluate(evl, solver, net):
     im = cv2.imread(im_path)
     samples = gaussian_sample(im, gt, PARAMS, 64)
     db = [{
-              'path': im_path,
-              'img': im,
-              'gt': gt,
-              'samples': [samples[0]]
-          }]
+        'path': im_path,
+        'img': im,
+        'gt': gt,
+        'samples': [samples[0]]
+    }]
     db2 = [{
-'path':im_path,
-'img':im,
-'gt':gt,
-'samples':[samples[1]]
-          }]
+        'path': im_path,
+        'img': im,
+        'gt': gt,
+        'samples': [samples[1]]
+    }]
     blob = get_next_mini_batch(db)
     print blob['label']
     blob = {'data': blob['data']}
@@ -75,7 +75,6 @@ def evaluate(evl, solver, net):
 
     out = net.forward(**blob)['cls_prob']
     print out
-    
 
     def initialize():
         im = cv2.imread(im_path)
@@ -83,10 +82,10 @@ def evaluate(evl, solver, net):
         for i in range(100):
             samples = gaussian_sample(im, gt, PARAMS, 64)
             db.append({
-            'path': im_path,
-            'img': im,
-            'gt': gt,
-            'samples': samples
+                'path': im_path,
+                'img': im,
+                'gt': gt,
+                'samples': samples
             })
         solver.net.layers[0].get_db(db)
         solver.step(100)

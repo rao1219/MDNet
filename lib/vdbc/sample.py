@@ -12,6 +12,7 @@ import cv2
 import random as rd
 from lib.utils.bbox import bbox_overlaps
 
+
 def gaussian_sample(im, bbox, params, num):
     """Generate gaussian samples based on bbox
     :arg

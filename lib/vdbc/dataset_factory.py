@@ -281,12 +281,13 @@ class VDBC(object):
             im = cv2.imread(frame)
             samples = gaussian_sample(im=im, bbox=gt, params=params, num=num)
 
-            datas.append({
-                'path': frame,
-                'img': im,
-                'gt': gt,
-                'samples': samples
-            })
+            for s in samples:
+                datas.append({
+                    'path': frame,
+                    'img': im,
+                    'gt': gt,
+                    'samples': [s]
+                })
         print '[VDBC] Data of video set {} is built.'.format(self.__folder_map[self._cur])
         self._cur += 1
         if self._cur == self.__num_videos:

@@ -2,6 +2,7 @@ __author__ = 'stephen'
 
 import caffe
 import cv2, os
+import numpy as np
 import matplotlib.pyplot as plt
 from lib.vdbc.dataset_factory import VDBC
 from lib.vdbc.evaluate import Evaluator
@@ -10,6 +11,7 @@ from lib.vdbc.sample import gaussian_sample
 from lib.data_layer.layer import get_next_mini_batch
 
 PARAMS = (0.3, 0.3, 0.05, 0.7, 0.3)
+IMS_PER_FRAME = 256
 
 
 def vis_detection(im_path, gt, box):
@@ -51,60 +53,38 @@ def get_solver_net(train, test, weights):
 
 
 def evaluate(evl, solver, net):
+    # Initialize the net with the first frame
     im_path, gt = evl.init_frame()
-    im_path = evl.next_frame()
     im = cv2.imread(im_path)
-    samples = gaussian_sample(im, gt, PARAMS, 64)
-    db = [{
-        'path': im_path,
-        'img': im,
-        'gt': gt,
-        'samples': [samples[0]]
-    }]
-    db2 = [{
-        'path': im_path,
-        'img': im,
-        'gt': gt,
-        'samples': [samples[1]]
-    }]
-    blob = get_next_mini_batch(db)
-    print blob['label']
-    blob = {'data': blob['data']}
-
-    net.blobs['data'].reshape(*blob['data'].shape)
-
-    out = net.forward(**blob)['cls_prob']
-    print out
-
-    def initialize():
-        im = cv2.imread(im_path)
-        db = []
-        for i in range(100):
-            samples = gaussian_sample(im, gt, PARAMS, 64)
-            db.append({
+    samples = gaussian_sample(im, gt, PARAMS, 5500)
+    db = []
+    for i in range(len(samples)):
+        db.append({
                 'path': im_path,
                 'img': im,
                 'gt': gt,
-                'samples': samples
+                'samples': [samples[i]]
             })
-        solver.net.layers[0].get_db(db)
-        solver.step(100)
+    solver.net.layers[0].get_db(db)
+    solver.step(1000)
 
-    scores = []
-
-    # Initialize the net with the first frame
-    initialize()
-
-    net.blobs['data'].reshape(*blob['data'].shape)
-
-    out = net.forward(**blob)['cls_prob']
-    print out
-    blob = get_next_mini_batch(db2)
-    blob = {'data': blob['data']}
-    net.blobs['data'].reshape(*blob['data'].shape)
-    out = net.forward(**blob)['cls_prob']
-    print out
-
+    for i in range(1):
+        im_path = evl.next_frame()
+        im = cv2.imread(im_path)
+        samples=gaussian_sample(im, gt, PARAMS, IMS_PER_FRAME)
+        scores = np.zeros(IMS_PER_FRAME, dtype=np.float64)
+        for i in range(IMS_PER_FRAME):
+            db = [{
+                'path': im_path,
+                'img': im,
+                'gt': gt,
+                'samples': [samples[i]]
+            }]
+            blob = get_next_mini_batch(db)
+            blob = {'data': blob['data']}
+            net.blobs['data'].reshape(*blob['data'].shape)
+            out = net.forward(**blob)['cls_prob']
+            scores[i] = out[1]
 
 if __name__ == '__main__':
     caffe.set_mode_gpu()

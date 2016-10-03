@@ -94,7 +94,7 @@ layer {
 layer {
   bottom: "pool2"
   top: "conv3"
-  name: "conv3"
+  name: "conv_3"
   type: "Convolution"
   convolution_param {
     num_output: 256

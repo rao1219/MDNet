@@ -109,9 +109,20 @@ layer {
   type: "ReLU"
 }
 layer {
+  bottom: "conv3"
+  top: "pool3"
+  name: "pool3"
+  type: "Pooling"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 1
+  }
+}
+layer {
   name: "fc4"
   type: "InnerProduct"
-  bottom: "conv3"
+  bottom: "pool3"
   top: "fc4"
   inner_product_param {
     num_output: 512

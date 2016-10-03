@@ -105,9 +105,20 @@ layer {
   type: "ReLU"
 }
 layer {
-  name: "fc4_new"
-  type: "InnerProduct"
   bottom: "conv3"
+  top: "pool3"
+  name: "pool3"
+  type: "Pooling"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 1
+  }
+}
+layer {
+  name: "fc4"
+  type: "InnerProduct"
+  bottom: "pool3"
   top: "fc4"
   inner_product_param {
     num_output: 512
@@ -126,7 +137,7 @@ layer {
   top: "fc4"
 }
 layer {
-  name: "fc5_new"
+  name: "fc5"
   type: "InnerProduct"
   bottom: "fc4"
   top: "fc5"
@@ -141,7 +152,7 @@ layer {
   top: "fc5"
 }
 layer {
-  name: "cls_score_new"
+  name: "cls_score"
   type: "InnerProduct"
   bottom: "fc5"
   top: "cls_score"

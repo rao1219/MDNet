@@ -62,7 +62,7 @@ class SolverWrapper(object):
             timer.toc()
 
             # print the speed
-            if self._solver.iter % 100 == 0:
+            if self._solver.iter % 1000 == 0:
                 print 'speed: {:.3f}s / iter.'.format(timer.average_time)
             # snapshot the weights
             if self._solver.iter % snapshot_iters == 0:

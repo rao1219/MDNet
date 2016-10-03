@@ -112,7 +112,7 @@ if __name__ == '__main__':
     # get the deploy solver and net with pre-trained caffe model
     train = os.path.join('model', 'deploy_solver.prototxt')
     test = os.path.join('model', 'deploy_test.prototxt')
-    weights = os.path.join('model', 'MDNet_iter_230220.caffemodel')
+    weights = os.path.join('model', 'MDNet_iter_800000.caffemodel')
 
     solver, net = get_solver_net(train, test, weights)
 

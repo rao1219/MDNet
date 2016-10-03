@@ -27,7 +27,7 @@ layer {
   name: "relu1"
   type: "ReLU"
 }
-layers {
+layer {
   bottom: "conv1"
   top: "norm1"
   name: "norm1"
@@ -39,7 +39,7 @@ layers {
     k: 2
   }
 }
-layers {
+layer {
   bottom: "norm1"
   top: "pool1"
   name: "pool1"
@@ -50,7 +50,7 @@ layers {
     stride: 2
   }
 }
-layers {
+layer {
   bottom: "pool1"
   top: "conv2"
   name: "conv2"
@@ -62,13 +62,13 @@ layers {
     stride: 2
   }
 }
-layers {
+layer {
   bottom: "conv2"
   top: "conv2"
   name: "relu2"
   type: "ReLU"
 }
-layers {
+layer {
   bottom: "conv2"
   top: "norm2"
   name: "norm2"
@@ -80,7 +80,7 @@ layers {
     k: 2
   }
 }
-layers {
+layer {
   bottom: "norm2"
   top: "pool2"
   name: "pool2"
@@ -91,7 +91,7 @@ layers {
     stride: 2
   }
 }
-layers {
+layer {
   bottom: "pool2"
   top: "conv3"
   name: "conv3"
@@ -102,7 +102,7 @@ layers {
     kernel_size: 3
   }
 }
-layers {
+layer {
   bottom: "conv3"
   top: "conv3"
   name: "relu3"

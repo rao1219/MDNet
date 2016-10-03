@@ -80,7 +80,7 @@ def evaluate(evl, solver, net):
     def initialize():
         im = cv2.imread(im_path)
         db = []
-        for i in range(30):
+        for i in range(100):
             samples = gaussian_sample(im, gt, PARAMS, 64)
             db.append({
             'path': im_path,
@@ -89,7 +89,7 @@ def evaluate(evl, solver, net):
             'samples': samples
             })
         solver.net.layers[0].get_db(db)
-        solver.step(30)
+        solver.step(100)
 
     scores = []
 

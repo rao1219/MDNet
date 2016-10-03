@@ -97,7 +97,7 @@ layer {
   name: "conv3"
   type: "Convolution"
   convolution_param {
-    num_output: 512
+    num_output: 256
     pad: 1
     kernel_size: 3
   }

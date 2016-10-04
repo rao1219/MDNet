@@ -81,7 +81,6 @@ def gaussian_sample(im, bbox, params, num):
         else:
             continue
         cur_id += 1
-
     return bboxes
 
 

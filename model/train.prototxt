@@ -176,7 +176,7 @@ layer {
   bottom: "fc5"
   top: "cls_score"
   inner_product_param {
-    num_output: 82 # 41 * 2
+    num_output: 82 
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -206,7 +206,7 @@ layer {
   reshape_param {
     shape {
       dim: 0
-      dim: 1
+      dim: 2
       dim: 41
       dim: 1
     }

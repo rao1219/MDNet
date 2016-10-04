@@ -49,8 +49,7 @@ def get_next_mini_batch(db, pixel_means=None):
 
     for im_i in range(num_images):
         labels = [sample['label'] for sample in db[im_i]['samples']]
-        labels_blob = np.hstack((labels_blob, np.array(labels)))
-
+        labels_blob = np.vstack((labels_blob, np.array(labels)))
     blobs['label'] = labels_blob
 
     return blobs
@@ -64,7 +63,7 @@ def get_next_mul_label_batch(db, num_class, pixel_means=None):
         pixel_means = np.array([[[102.9801, 115.9465, 122.7717]]])
 
     im_blob = get_image_blob(db, pixel_means)
-    labels_blob = np.zeros((0, num_class), dtype=np.float32)
+    labels_blob = np.zeros((1, num_class), dtype=np.float32)
 
     blobs = {
         'data': im_blob
@@ -74,10 +73,8 @@ def get_next_mul_label_batch(db, num_class, pixel_means=None):
         label = [sample['label'] for sample in db[im_i]['samples']]
         assert len(label) == 1, "[DataLayer.Batch]Only support single batch."
         label = label[0]
-        labels = np.zeros(num_class, dtype=np.float32)
         if label >= 0:
-            labels[label] = 1
-        labels_blob = np.hstack((labels_blob, np.array(label)))
+            labels_blob[0, label] = 1
 
     blobs['label'] = labels_blob
 
@@ -135,10 +132,11 @@ class DataLayer(caffe.Layer):
         """Setup the DataLayer."""
 
         # parse the layer parameter string
-        layer_params = yaml.load(self.param_str_)
+        layer_params = yaml.load(self.param_str)
 
         self._batch_size = 1 # batch size is always 1
         self._num_class = layer_params['num_class']
+        print '[DataLayer]Number of classes: {}.'.format(self._num_class)
 
         self._name_to_top_map = {}
 
@@ -150,7 +148,7 @@ class DataLayer(caffe.Layer):
         self._name_to_top_map['data'] = idx
 
         idx += 1
-        top[idx].reshape(1)
+        top[idx].reshape(1, self._num_class)
         self._name_to_top_map['label'] = idx
 
     def forward(self, bottom, top):

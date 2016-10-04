@@ -283,14 +283,14 @@ class VDBC(object):
 
             for s in samples:
                 if s['label'] == 1:
-                    label = self._cur
+                    s['label'] = self._cur
                 else:
-                    label = -1
+                    s['label'] = -1
                 datas.append({
                     'path': frame,
                     'img': im,
                     'gt': gt,
-                    'samples': [label]
+                    'samples': [s]
                 })
         print '[VDBC] Data of video set {} is built and ID is {}.'.format(self.__folder_map[self._cur], self._cur)
         self._cur += 1

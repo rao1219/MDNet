@@ -110,7 +110,7 @@ layer {
   }
 }
 layer {
-  name: "fc4"
+  name: "fc4_new"
   type: "InnerProduct"
   bottom: "pool3"
   top: "fc4"
@@ -125,7 +125,7 @@ layer {
   top: "fc4"
 }
 layer {
-  name: "fc5"
+  name: "fc5_new"
   type: "InnerProduct"
   bottom: "fc4"
   top: "fc5"
@@ -140,7 +140,7 @@ layer {
   top: "fc5"
 }
 layer {
-  name: "cls_score"
+  name: "cls_score_new"
   type: "InnerProduct"
   bottom: "fc5"
   top: "cls_score"

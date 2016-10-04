@@ -126,7 +126,8 @@ class DataLayer(caffe.Layer):
         """
         db_inds = self._get_next_minibatch_inds()
         minidb = [self._db[i] for i in db_inds]
-        return get_next_mul_label_batch(minidb, self._num_class)
+        return get_next_mul_label_batch(minidb, self._num_class) \
+            if self._num_class > 2 else get_next_mini_batch(minidb)
 
     def setup(self, bottom, top):
         """Setup the DataLayer."""

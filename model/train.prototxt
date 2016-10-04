@@ -100,13 +100,10 @@ layer {
     num_output: 256
     pad: 1
     kernel_size: 3
+    weight_filler{
+       type: "gaussian"
+	}
   }
-}
-layer {
-  bottom: "conv3"
-  top: "conv3"
-  name: "relu3"
-  type: "ReLU"
 }
 layer {
   bottom: "conv3"
@@ -183,10 +180,6 @@ layer {
     weight_filler {
       type: "gaussian"
       std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
     }
   }
 }

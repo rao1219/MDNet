@@ -13,6 +13,7 @@ class Evaluator(object):
         assert isinstance(vdbc, VDBC), "[Evaluator]Argument vdbc is not the instance of VDBC."
         self._image_list, self._gt_info, self._folder_map = vdbc.get_db(order=True)
         print '[Evaluator]Video set:', self._folder_map
+        print '[Evaluator]Number of sets: {}'.format(len(self._folder_map))
         self._etype = etype
         self._ground_truth = None
         self._video_id = 0

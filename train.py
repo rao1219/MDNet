@@ -18,7 +18,7 @@ EXCLUDE_SET = {
                 'MotorRolling', 'Skating1', 'Trellis', 'Woman']}
 
 
-def train_net(pretrained_model, snapshot_iters=200000):
+def train_net(pretrained_model, snapshot_iters=10000):
     vdbc = VDBC(dbtype=dbtype, dbpath=dbpath, gtpath=gtpath, flush=True)
     vdbc.del_exclude(EXCLUDE_SET['vot2014'])
     print 'VDBC instance built.'

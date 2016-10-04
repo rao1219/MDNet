@@ -7,7 +7,7 @@ layer {
   python_param {
     module: 'lib.data_layer.layer'
     layer: 'DataLayer'
-    param_str: "'batch_size': 1"
+    param_str: "'num_class': 41"
   }
 }
 layer {
@@ -176,18 +176,48 @@ layer {
   bottom: "fc5"
   top: "cls_score"
   inner_product_param {
-    num_output: 2
+    num_output: 82 # 41 * 2
     weight_filler {
       type: "gaussian"
       std: 0.01
     }
   }
 }
+
+layer {
+  name: "label_reshape"
+  type: "Reshape"
+  bottom: "label"
+  top: "label_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 1
+      dim: 41
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "cls_score_reshape"
+  type: "Reshape"
+  bottom: "cls_score"
+  top: "cls_score_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 1
+      dim: 41
+      dim: 1
+    }
+  }
+}
+
 layer {
   name: "loss_cls"
   type: "SoftmaxWithLoss"
-  bottom: "cls_score"
-  bottom: "label"
+  bottom: "cls_score_reshape"
+  bottom: "label_reshape"
   top: "loss_cls"
   loss_weight: 1
 }

@@ -49,7 +49,7 @@ def get_next_mini_batch(db, pixel_means=None):
 
     for im_i in range(num_images):
         labels = [sample['label'] for sample in db[im_i]['samples']]
-        labels_blob = np.vstack((labels_blob, np.array(labels)))
+        labels_blob = np.hstack((labels_blob, np.array(labels)))
     blobs['label'] = labels_blob
 
     return blobs
@@ -149,7 +149,10 @@ class DataLayer(caffe.Layer):
         self._name_to_top_map['data'] = idx
 
         idx += 1
-        top[idx].reshape(1, self._num_class)
+        if self._num_class>2:
+            top[idx].reshape(1, self._num_class)
+        else:
+            top[idx].reshape(1)
         self._name_to_top_map['label'] = idx
 
     def forward(self, bottom, top):

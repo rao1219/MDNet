@@ -15,6 +15,8 @@ layer {
   top: "conv1"
   name: "conv1"
   type: "Convolution"
+  param {lr_mult:0}
+  param {lr_mult:0}
   convolution_param {
     num_output: 96
     kernel_size: 7
@@ -55,6 +57,8 @@ layer {
   top: "conv2"
   name: "conv2"
   type: "Convolution"
+  param {lr_mult:0}
+  param {lr_mult:0}
   convolution_param {
     num_output: 256
     pad: 1
@@ -96,12 +100,20 @@ layer {
   top: "conv3"
   name: "conv_3"
   type: "Convolution"
+  param {lr_mult:0}
+  param {lr_mult:0}
   convolution_param {
     num_output: 256
     pad: 1
     kernel_size: 3
     weight_filler{type: "gaussian"}
   }
+}
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
 }
 layer {
   bottom: "conv3"
@@ -121,6 +133,10 @@ layer {
   top: "fc4"
   inner_product_param {
     num_output: 512
+    weight_filler{
+		type: "gaussian"
+		std: 0.01
+	}
   }
 }
 layer {
@@ -145,7 +161,10 @@ layer {
   top: "fc5"
   inner_product_param {
     num_output: 512
-    weight_filler{type: "gaussian"}
+    weight_filler{
+		type: "gaussian"
+		std: 0.01
+	}
   }
 }
 layer {
@@ -173,7 +192,7 @@ layer {
   }
 }
 layer {
-  name: "loss_cls"
+  name: "loss_cls_new"
   type: "SoftmaxWithLoss"
   bottom: "cls_score"
   bottom: "label"

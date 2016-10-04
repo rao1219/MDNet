@@ -107,6 +107,12 @@ layer {
 }
 layer {
   bottom: "conv3"
+  top: "conv3"
+  name: "relu3"
+  type: "ReLU"
+}
+layer {
+  bottom: "conv3"
   top: "pool3"
   name: "pool3"
   type: "Pooling"
@@ -121,13 +127,13 @@ layer {
   type: "InnerProduct"
   bottom: "pool3"
   top: "fc4"
+  param {lr_mult: 10}
+  param {lr_mult: 20}
   inner_product_param {
     num_output: 512
     weight_filler{
         type: "xavier"
-    }
-    bias_filler{
-        type: "constant"
+        std: 0.01
     }
   }
 }
@@ -151,8 +157,14 @@ layer {
   type: "InnerProduct"
   bottom: "fc4"
   top: "fc5"
+  param {lr_mult:10}
+  param {lr_mult:20}
   inner_product_param {
     num_output: 512
+    weight_filler{
+   		type: "xavier"
+		std: 0.01
+	}
   }
 }
 layer {
@@ -175,10 +187,12 @@ layer {
   type: "InnerProduct"
   bottom: "fc5"
   top: "cls_score"
+  param {lr_mult: 10}
+  param {lr_mult: 20}
   inner_product_param {
     num_output: 82 
     weight_filler {
-      type: "gaussian"
+      type: "xavier"
       std: 0.01
     }
   }

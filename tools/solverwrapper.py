@@ -28,6 +28,9 @@ class SolverWrapper(object):
             pb2.text_format.Merge(f.read(), self._solver_param)
 
         self._solver.net.layers[0].get_VDBC(vdbc)
+    
+    def get_net(self):
+        return self._solver.net
 
     def snapshot(self):
         """

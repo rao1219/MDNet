@@ -78,8 +78,8 @@ class bbox_reg(object):
         Y, O = self._get_examples(bboxes, gt)
 
         idx = np.where(O > self._min_overlap)[0]
-        X = X[0]
-        Y = Y[0]
+        X = X[idx]
+        Y = Y[idx]
         # add bias
         X = np.column_stack((X, np.ones(X.shape[0], dtype=np.float32)))
 
@@ -88,9 +88,9 @@ class bbox_reg(object):
         Y = Y - mu
         S = np.dot(Y.T, Y) / Y.shape[0]
         D, V = np.linalg.eig(S)
-        T = V * np.diag(1 / np.sqrt(D + 0.001)) * V.T
-        T_inv = V * np.diag(np.sqrt(D + 0.001)) * V.T
-        Y = Y * T
+        T = V.T.dot(V.dot(np.diag(1 / np.sqrt(D + 0.001))))
+        T_inv = V.T.dot(V.dot(np.diag(np.sqrt(D + 0.001))))
+        Y = np.dot(Y, T)
 
         self.Beta = [self._solve_robust(X, Y[:, 0], self._ld, self._robust),
                      self._solve_robust(X, Y[:, 1], self._ld, self._robust),
@@ -168,10 +168,14 @@ class bbox_reg(object):
         return x, losses
 
     def _solve(self, A, y, ld):
-        R = np.linalg.cholesky(A.T * A + ld * np.eye(A.shape[1]))
-        z = R.T / (A.T * y)
+        M = A.T.dot(A)
+        E = np.eye(A.shape[1])
+        E *= ld
+        M += E
+        R = np.linalg.cholesky(M)
+        z = R.T / A.T.dot(y)
         x = R / z
-        losses = 0.5 * np.square(A * x - y)
+        losses = 0.5 * np.square(A.dot(x) - y)
         return x, losses
 
 if __name__ == '__main__':
@@ -180,20 +184,26 @@ if __name__ == '__main__':
     from lib.vdbc.sample import gaussian_sample
 
     PARAMS = (0.3, 0.3, 0.05, 0.7, 0.3)
-    conv_data = pkl.load(open('0.pkl', 'rb'))
+    conv_data = pkl.load(open('conv_data.pkl', 'rb'))
 
-    X = conv_data['data'][0]
-    X = np.array(X, dtype=np.float32)
-    n = np.sqrt(X.size)
-    X = X.reshape((1, n, n))
-    print X.shape
-    im = cv2.imread('00000001.jpg')
-    gt = conv_data['gt']
-    bboxes = [{
-        'box': gt,
-        'label': 1,
-        'overlap': 1
-    }]
+    data = conv_data[0]
+    num_feat = len(data['boxes'])
+    X = None
+    bboxes = []
+    for i in range(num_feat):
+        x = data['data'][i]
+        x = x.reshape((1, x.size))
+        if X is None:
+            X = x
+        else:
+            X = np.vstack((X, x))
+        box = data['boxes'][i]
+        overlap = data['overlap'][i]
+        bboxes.append({
+            'box': box,
+            'label': 1,
+            'overlap': overlap
+        })
 
     reg = bbox_reg()
-    reg.train(X, bboxes, gt)
+    reg.train(X, bboxes, data['gt'])

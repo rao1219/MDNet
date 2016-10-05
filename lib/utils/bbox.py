@@ -88,25 +88,27 @@ class bbox_reg(object):
         Y = Y - mu
         S = np.dot(Y.T, Y) / Y.shape[0]
         D, V = np.linalg.eig(S)
-        T = V.T.dot(V.dot(np.diag(1 / np.sqrt(D + 0.001))))
+        di = np.diag(1 / np.sqrt(D + 0.001))
+        T = V.T.dot(V.dot(di))
         T_inv = V.T.dot(V.dot(np.diag(np.sqrt(D + 0.001))))
         Y = np.dot(Y, T)
 
-        self.Beta = [self._solve_robust(X, Y[:, 0], self._ld, self._robust),
+        self.Beta = np.array([self._solve_robust(X, Y[:, 0], self._ld, self._robust),
                      self._solve_robust(X, Y[:, 1], self._ld, self._robust),
                      self._solve_robust(X, Y[:, 2], self._ld, self._robust),
-                     self._solve_robust(X, Y[:, 3], self._ld, self._robust)]
+                     self._solve_robust(X, Y[:, 3], self._ld, self._robust)]).T
 
         self.mu = mu
         self.T = T
         self.T_inv = T_inv
 
     def predict(self, feat, ex_boxes):
-        end = self.Beta.shape[1]
+        num = ex_boxes.shape[0]
+        end = self.Beta.shape[0]
         # Predict regression targets
-        Y = feat * self.Beta[:end-1, :] + self.Beta[end-1, :]
+        Y = feat.dot(self.Beta[:end-1, :]) + self.Beta[end-1, :]
         # Invert whitening transformation
-        Y = Y * self.T_inv + self.mu
+        Y = Y.dot(self.T_inv) + self.mu
 
         # Read out predictions
         dst_ctr_x = Y[:, 0]
@@ -124,10 +126,10 @@ class bbox_reg(object):
         pred_w = np.exp(dst_scl_x) * src_w
         pred_h = np.exp(dst_scl_y) * src_h
         pred_boxes = np.zeros((Y.shape[0], 4))
-        pred_boxes[:, 0] = (pred_ctr_x - 0.5 * pred_w)[:, 0]
-        pred_boxes[:, 1] = (pred_ctr_y - 0.5 * pred_h)[:, 0]
-        pred_boxes[:, 2] = pred_w[:, 0]
-        pred_boxes[:, 3] = pred_h[:, 0]
+        pred_boxes[:, 0] = (pred_ctr_x - 0.5 * pred_w)[:, 0] if num > 1 else (pred_ctr_x - 0.5 * pred_w)[0]
+        pred_boxes[:, 1] = (pred_ctr_y - 0.5 * pred_h)[:, 0] if num > 1 else (pred_ctr_y - 0.5 * pred_h)[0]
+        pred_boxes[:, 2] = pred_w[:, 0] if num > 1 else pred_w[0]
+        pred_boxes[:, 3] = pred_h[:, 0] if num > 1 else pred_h[0]
 
         return pred_boxes
 
@@ -165,17 +167,20 @@ class bbox_reg(object):
         x, losses = self._solve(A, y, ld)
         if qtile > 0:
             pass
-        return x, losses
+        return x
 
     def _solve(self, A, y, ld):
-        M = np.dot(A.transpose(), A)
+        y = y.reshape((y.size, 1))
+        M = A.T.dot(A)
         E = np.eye(A.shape[1])
         E *= ld
         M += E
-        R = np.linalg.cholesky(M)
-        z = R.T / A.T.dot(y)
-        x = R / z
-        losses = 0.5 * np.square(A.dot(x) - y)
+        inv_m = np.linalg.inv(M)
+        x = inv_m.dot(A.T)
+        x = x.dot(y)
+        l = A.dot(x) - y
+        x = x.reshape((1, x.size))[0]
+        losses = 0.5 * np.square(l)
         return x, losses
 
 if __name__ == '__main__':
@@ -207,3 +212,10 @@ if __name__ == '__main__':
 
     reg = bbox_reg()
     reg.train(X, bboxes, data['gt'])
+    print data['gt']
+
+    feat = X[1]
+
+    feat = feat.reshape((1, feat.size))
+    box = np.array(bboxes[1]['box']).reshape((1, 4))
+    reg.predict(feat, box)

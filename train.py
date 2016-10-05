@@ -24,7 +24,7 @@ def train_net(pretrained_model, snapshot_iters=1000000):
     print 'VDBC instance built.'
 
     num_frame = vdbc.get_frame_count()
-    max_iters = 640 * num_frame
+    max_iters = 64 * 4 * num_frame
     snapshot_iters = 64 * num_frame
     print 'Total number of frames: {}'.format(num_frame)
     print 'Max iterations: {}'.format(max_iters)

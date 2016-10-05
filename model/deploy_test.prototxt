@@ -97,6 +97,12 @@ layer {
   }
 }
 layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
+}
+layer {
   bottom: "conv3"
   top: "pool3"
   name: "pool3"

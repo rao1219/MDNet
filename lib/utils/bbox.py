@@ -168,7 +168,7 @@ class bbox_reg(object):
         return x, losses
 
     def _solve(self, A, y, ld):
-        M = A.T.dot(A)
+        M = np.dot(A.transpose(), A)
         E = np.eye(A.shape[1])
         E *= ld
         M += E

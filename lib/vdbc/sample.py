@@ -26,7 +26,8 @@ def gaussian_sample(im, bbox, params, num):
             {
                 'img' :img,
                 'box'(x, y, w, h),
-                'label': label
+                'label': label,
+                'overlap': overlap
             }
     """
     assert len(bbox) == 4, "Invalid ground-truth(x, y, w, h) form."
@@ -72,12 +73,16 @@ def gaussian_sample(im, bbox, params, num):
             bboxes.append({
                 'img': im,
                 'box': sample,
-                'label': 1})
+                'label': 1,
+                'overlap': overlap
+            })
         elif overlap < params[4]:
             bboxes.append({
                 'img': im,
                 'box': sample,
-                'label': 0})
+                'label': 0,
+                'overlap': overlap
+            })
         else:
             continue
         cur_id += 1

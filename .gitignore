@@ -95,3 +95,9 @@ model/*.caffemodel
 
 gt_info.json
 image_list.json
+
+lib/utils/*.pkl
+lib/utils/*.jpg
+
+test.ipynb
+train.ipynb

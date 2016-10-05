@@ -3,6 +3,7 @@ __author__ = 'stephen'
 import numpy as np
 import math
 
+
 def bbox_overlaps(gt_boxes, query_boxes, gt_fix=True):
     """
      Calculate the overlaps between ground-truth boxes and query boxes.
@@ -67,7 +68,6 @@ class bbox_reg(object):
         This class is actually after MDNet's train_bbox_regressor.m
         bboxes: list of boxes
             {
-                'img' :img,
                 'box'(x, y, w, h),
                 'label': label,
                 'overlap':overlap
@@ -77,16 +77,16 @@ class bbox_reg(object):
         # Get positive examples
         Y, O = self._get_examples(bboxes, gt)
 
-        idx = np.where(O > self._min_overlap)
-        X = X[idx, :]
-        Y = Y[idx, :]
+        idx = np.where(O > self._min_overlap)[0]
+        X = X[0]
+        Y = Y[0]
         # add bias
         X = np.column_stack((X, np.ones(X.shape[0], dtype=np.float32)))
 
         # Center and decorrelate targets
         mu = np.mean(Y)
         Y = Y - mu
-        S = Y.T * Y / Y.shape[0]
+        S = np.dot(Y.T, Y) / Y.shape[0]
         D, V = np.linalg.eig(S)
         T = V * np.diag(1 / np.sqrt(D + 0.001)) * V.T
         T_inv = V * np.diag(np.sqrt(D + 0.001)) * V.T
@@ -136,8 +136,8 @@ class bbox_reg(object):
         Y = np.zeros((0, 4), dtype=np.float32)
         O = np.zeros(0, dtype=np.float32)
 
-        gt_w = gt[2]
-        gt_h = gt[3]
+        gt_w = 1. * gt[2]
+        gt_h = 1. * gt[3]
         gt_ctr_x = gt[0] + 0.5 * gt_w
         gt_ctr_y = gt[1] + 0.5 * gt_h
 
@@ -150,14 +150,14 @@ class bbox_reg(object):
             src_ctr_x = ex_box[0] + 0.5 * src_w
             src_ctr_y = ex_box[1] + 0.5 * src_h
 
-            dst_ctr_x = (gt_ctr_x - src_ctr_x) * 1 / src_w
-            dst_ctr_y = (gt_ctr_y - src_ctr_y) * 1 / src_h
+            dst_ctr_x = (gt_ctr_x - src_ctr_x) * 1. / src_w
+            dst_ctr_y = (gt_ctr_y - src_ctr_y) * 1. / src_h
             dst_scl_w = math.log(gt_w / src_w)
             dst_scl_h = math.log(gt_h / src_h)
 
             arr = [dst_ctr_x, dst_ctr_y, dst_scl_w, dst_scl_h]
             Y = np.vstack((Y, np.array(arr, dtype=np.float32)))
-            O = np.vstack((O, np.array(ex_overlap, dtype=np.float32)))
+            O = np.hstack((O, np.array(ex_overlap, dtype=np.float32)))
 
         return Y, O
 
@@ -174,3 +174,26 @@ class bbox_reg(object):
         losses = 0.5 * np.square(A * x - y)
         return x, losses
 
+if __name__ == '__main__':
+    import cv2, os
+    import pickle as pkl
+    from lib.vdbc.sample import gaussian_sample
+
+    PARAMS = (0.3, 0.3, 0.05, 0.7, 0.3)
+    conv_data = pkl.load(open('0.pkl', 'rb'))
+
+    X = conv_data['data'][0]
+    X = np.array(X, dtype=np.float32)
+    n = np.sqrt(X.size)
+    X = X.reshape((1, n, n))
+    print X.shape
+    im = cv2.imread('00000001.jpg')
+    gt = conv_data['gt']
+    bboxes = [{
+        'box': gt,
+        'label': 1,
+        'overlap': 1
+    }]
+
+    reg = bbox_reg()
+    reg.train(X, bboxes, gt)

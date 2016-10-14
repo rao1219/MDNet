@@ -31,7 +31,7 @@ class Evaluator(object):
         self._video_id = vid
         self._init_next_video()
         
-    def _next_video(self):
+    def next_video(self):
         """Initialize parameters for evaluating next video sequence.
         """
         self._video_id += 1
@@ -59,6 +59,7 @@ class Evaluator(object):
         gt = self._ground_truth[self._cur - 1]
         # Since result bbox is reported once a time, therefore takes the first one
         overlap = bbox_overlaps([gt], [bbox])[0]
+        print '{}: overlap: {}'.format(self._cur-1, overlap)
         self._overlaps[self._video_name].append(overlap)
 
     def init_frame(self):
@@ -99,4 +100,10 @@ class Evaluator(object):
 
     def get_video_num(self):
         return len(self._image_list)
+    
+    def get_mAP(self):
+        sum = 0.
+        for ol in self._overlaps[self._video_name]:
+            sum += ol
+        return sum / len(self._overlaps[self._video_name])
 

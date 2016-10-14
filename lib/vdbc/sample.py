@@ -47,10 +47,12 @@ def gaussian_sample(im, bbox, params, num):
     cur_id = 0
     while cur_id < num:
         # new box parameters
-        offsetx = rd.gauss(0, params[0] * bbox[2])
-        offsety = rd.gauss(0, params[1] * bbox[3])
+        _mean = (bbox[2] + bbox[3]) / 2
+        offsetx = rd.gauss(0, params[0] * _mean)
+        offsety = rd.gauss(0, params[1] * _mean)
         scalex = rd.gauss(1, params[2])
-        scaley = rd.gauss(1, params[2])
+        # scaley = rd.gauss(1, params[2])
+        scaley = scalex
         # new box half width and half height
         hw = bbox[2] * scalex / 2
         hh = bbox[3] * scaley / 2

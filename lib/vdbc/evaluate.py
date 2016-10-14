@@ -48,6 +48,8 @@ class Evaluator(object):
         if self._etype == 'OTE':
             self._cur = 0
 
+        print '[Evaluator]Evaluating video {}.'.format(self._video_name)
+
     def get_results(self):
         return self._overlaps
 
@@ -94,4 +96,7 @@ class Evaluator(object):
     
     def get_ground_truth(self):
         return self._ground_truth[self._cur - 1]
+
+    def get_video_num(self):
+        return len(self._image_list)
 

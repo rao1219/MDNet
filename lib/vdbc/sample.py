@@ -9,11 +9,12 @@ __author__ = 'stephen'
 ####################################
 
 import cv2
-import random as rd
+import numpy as np
+from numpy.random import randn
 from lib.utils.bbox import bbox_overlaps
 
 
-def gaussian_sample(im, bbox, params, num):
+def gaussian_sample(im, bbox, params, num, type='TRAIN'):
     """Generate gaussian samples based on bbox
     :arg
     im: cv2's image
@@ -43,81 +44,84 @@ def gaussian_sample(im, bbox, params, num):
     centerx = bbox[0] + bbox[2] / 2
     centery = bbox[1] + bbox[3] / 2
 
+    ones = np.ones((num, 1))
+    neg_ones = -1 * ones
+
+    mean = round((bbox[2] + bbox[3]) / 2.)
+    min_ = np.min(np.hstack((ones, 0.5 * randn(num, 1))), axis=1)
+    min_ = min_.reshape((min_.size, 1))
+    max_ = np.max(np.hstack((neg_ones, min_)), axis=1)
+    offsetx = params[0] * mean * max_
+    min_ = np.min(np.hstack((ones, 0.5 * randn(num, 1))), axis=1)
+    min_ = min_.reshape((min_.size, 1))
+    max_ = np.max(np.hstack((neg_ones, min_)), axis=1)
+    offsety = params[1] * mean * max_
+
+    min_ = np.min(np.hstack((ones, 0.5 * randn(num, 1))), axis=1)
+    min_ = min_.reshape((min_.size, 1))
+    max_ = params[2] * np.max(np.hstack((neg_ones, min_)), axis=1)
+    scale = 1.05 ** max_
+
+    w = (bbox[2] * scale)[:, np.newaxis]
+    h = (bbox[3] * scale)[:, np.newaxis]
+    tens = np.array([10] * num)[:, np.newaxis]
+    w_minus_10 = np.array(w - 10)
+    h_minus_10 = np.array(h - 10)
+    wmin_ = np.min(np.hstack((w_minus_10, w)), axis=1)[:, np.newaxis]
+    hmin_ = np.min(np.hstack((h_minus_10, h)), axis=1)[:, np.newaxis]
+    ws = np.max(np.hstack((tens, wmin_)), axis=1)
+    hs = np.max(np.hstack((tens, hmin_)), axis=1)
     bboxes = []
-    cur_id = 0
-    while cur_id < num:
-        # new box parameters
-        _mean = (bbox[2] + bbox[3]) / 2
-        offsetx = rd.gauss(0, params[0] * _mean)
-        offsety = rd.gauss(0, params[1] * _mean)
-        scalex = rd.gauss(1, params[2])
-        # scaley = rd.gauss(1, params[2])
-        scaley = scalex
-        # new box half width and half height
-        hw = bbox[2] * scalex / 2
-        hh = bbox[3] * scaley / 2
-        # box is in the form of (x1, y1, x2, y2)
+    for i in range(num):
+        hw = ws[i] / 2
+        hh = hs[i] / 2
         box = (
-            max(0, centerx + offsetx - hw),
-            max(0, centery + offsety - hh),
-            min(im_w, centerx + offsetx + hw),
-            min(im_h, centery + offsety + hh)
+            max(0, int(centerx + offsetx[i] - hw)),
+            max(0, int(centery + offsety[i] - hh)),
+            min(im_w, int(centerx + offsetx[i] + hw)),
+            min(im_h, int(centery + offsety[i] + hh))
         )
-
-        if box[0] > box[2] or box[1] > box[3]:
-            continue
-
-        # transform to (x, y, w, h)
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
-        # since there is only one query box, then take the first one in the overlaps
         overlap = bbox_overlaps([bbox], [sample])[0]
-        if overlap > params[3]:
-            bboxes.append({
-                'img': im,
-                'box': sample,
-                'label': 1,
-                'overlap': overlap
-            })
-        elif overlap < params[4]:
+        if type == 'TRAIN':
+            if overlap > params[3]:
+                bboxes.append({
+                    'img': im,
+                    'box': sample,
+                    'label': 1,
+                    'overlap': overlap
+                })
+            elif overlap < params[4]:
+                bboxes.append({
+                    'img': im,
+                    'box': sample,
+                    'label': 0,
+                    'overlap': overlap
+                })
+        elif type == 'TEST':
             bboxes.append({
                 'img': im,
                 'box': sample,
                 'label': 0,
                 'overlap': overlap
             })
-        else:
-            continue
-        cur_id += 1
     return bboxes
 
 
 if __name__ == '__main__':
     """Experiment code for testing.
     """
-    from lib.utils.image import im_bbox_show
+    # from lib.utils.image import im_bbox_show
     from dataset_factory import VDBC
-    vdbc = VDBC(dbtype='ALOV',
-                gtpath='C:\\Users\\user\\Desktop\\alov300++_frames\\gt',
-                dbpath='C:\\Users\\user\\Desktop\\alov300++_frames\\video')
 
+    vdbc = VDBC(dbtype='OTB',
+                gtpath='D:\\dataset\\OTB',
+                dbpath='D:\\dataset\\OTB',
+                flush=True)
 
     im_list, gts, fd_map = vdbc.get_db()
     im_path = im_list[fd_map[2]][11]
     im = cv2.imread(im_path)
     gt = gts[fd_map[2]][11]
 
-    bboxes = gaussian_sample(im, gt, (0.2, 0.2, 0.05, 0.7), 12)
-
-    boxes = [(gt[0], gt[1], gt[2], gt[3], 'blue')]
-    pos = 0
-    for sample in bboxes:
-        box = sample['box']
-        if sample['label'] == 1:
-            boxes.append((box[0], box[1], box[2], box[3], 'red'))
-            pos += 1
-        else:
-            boxes.append((box[0], box[1], box[2], box[3], 'green'))
-    print "pos: ", pos
-    im_bbox_show(im_path, boxes, linewidth=1.5)
-
-
+    bboxes = gaussian_sample(im, gt, (0.1, 0.1, 5, 0.7, 0.5), 12, type='TEST')

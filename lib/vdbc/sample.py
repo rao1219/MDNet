@@ -69,8 +69,12 @@ def gaussian_sample(im, bbox, params, num, type='TRAIN'):
     h_minus_10 = np.array(h - 10)
     wmin_ = np.min(np.hstack((w_minus_10, w)), axis=1)[:, np.newaxis]
     hmin_ = np.min(np.hstack((h_minus_10, h)), axis=1)[:, np.newaxis]
-    ws = np.max(np.hstack((tens, wmin_)), axis=1)
-    hs = np.max(np.hstack((tens, hmin_)), axis=1)
+    #if type == 'TRAIN':
+    #ws = np.max(np.hstack((tens, wmin_)), axis=1)
+    #hs = np.max(np.hstack((tens, hmin_)), axis=1)
+    #elif type == 'TEST':
+    ws = np.max(np.hstack((tens, w)), axis=1)
+    hs = np.max(np.hstack((tens, h)), axis=1)
     bboxes = []
     for i in range(num):
         hw = ws[i] / 2
@@ -81,17 +85,18 @@ def gaussian_sample(im, bbox, params, num, type='TRAIN'):
             min(im_w, int(centerx + offsetx[i] + hw)),
             min(im_h, int(centery + offsety[i] + hh))
         )
+        if box[0] == box[2] or box[1] == box[3]:
+            continue
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
         overlap = bbox_overlaps([bbox], [sample])[0]
-        if type == 'TRAIN':
-            if overlap > params[3]:
+        if overlap > params[3]:
                 bboxes.append({
                     'img': im,
                     'box': sample,
                     'label': 1,
                     'overlap': overlap
                 })
-            elif overlap < params[4]:
+        elif overlap < params[4]:
                 bboxes.append({
                     'img': im,
                     'box': sample,
@@ -99,12 +104,12 @@ def gaussian_sample(im, bbox, params, num, type='TRAIN'):
                     'overlap': overlap
                 })
         elif type == 'TEST':
-            bboxes.append({
-                'img': im,
-                'box': sample,
-                'label': 0,
-                'overlap': overlap
-            })
+                bboxes.append({
+                    'img': im,
+                    'box': sample,
+                    'label': 0,
+                    'overlap': overlap
+                })
     return bboxes
 
 

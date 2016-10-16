@@ -29,6 +29,7 @@ import numpy as np
 import numpy.random as npr
 from numpy.random import randn
 from lib.utils.bbox import bbox_overlaps
+import random as rd
 
 
 def uniform_aspect_sample(im, bbox, params, num, stype):
@@ -65,7 +66,7 @@ def uniform_aspect_sample(im, bbox, params, num, stype):
             min(im_h, int(cy + hh))
         )
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
-        if int(sample[2])<=0 or int(sample[3])<=0:
+        if int(sample[2]) <= 0 or int(sample[3]) <= 0:
             continue
         overlap = bbox_overlaps([bbox], [sample])[0]
         if overlap > params[3]:
@@ -100,9 +101,9 @@ def uniform_sample(im, bbox, params, num, stype):
     centery = bbox[1] + bbox[3] / 2
 
     mean = round((bbox[2] + bbox[3]) / 2.)
-    xrand = params[0] * mean * npr.rand(num, 1)*2 - 1
-    yrand = params[1] * mean * npr.rand(num, 1)*2 - 1
-    srand = 1.05 ** ((npr.rand(num, 1)*2 - 1) * params[3])
+    xrand = params[0] * mean * npr.rand(num, 1) * 2 - 1
+    yrand = params[1] * mean * npr.rand(num, 1) * 2 - 1
+    srand = 1.05 ** ((npr.rand(num, 1) * 2 - 1) * params[3])
     bboxes = []
     for i in range(num):
         cx = centerx + xrand[i, 0]
@@ -116,7 +117,7 @@ def uniform_sample(im, bbox, params, num, stype):
             min(im_h, int(cy + hh))
         )
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
-        if int(sample[2])<=0 or int(sample[3])<=0:
+        if int(sample[2]) <= 0 or int(sample[3]) <= 0:
             continue
         overlap = bbox_overlaps([bbox], [sample])[0]
         if overlap > params[3]:
@@ -192,23 +193,99 @@ def gaussian_sample(im, bbox, params, num, stype):
             min(im_h, int(centery + offsety[i] + hh))
         )
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
-        if int(sample[2])<=0 or int(sample[3])<=0:
+        if int(sample[2]) <= 0 or int(sample[3]) <= 0:
             continue
         overlap = bbox_overlaps([bbox], [sample])[0]
         if overlap > params[3]:
-                bboxes.append({
-                    'img': im,
-                    'box': sample,
-                    'label': 1,
-                    'overlap': overlap
-                })
+            bboxes.append({
+                'img': im,
+                'box': sample,
+                'label': 1,
+                'overlap': overlap
+            })
         elif overlap < params[4]:
-                bboxes.append({
-                    'img': im,
-                    'box': sample,
-                    'label': 0,
-                    'overlap': overlap
-                })
+            bboxes.append({
+                'img': im,
+                'box': sample,
+                'label': 0,
+                'overlap': overlap
+            })
+    return bboxes
+
+
+def mdnet_sample(im, bbox, params, num, stype):
+    """Generate gaussian samples based on bbox
+    :arg
+    im: cv2's image
+    bbox: ground-truth box(x, y, w, h)
+    params: five-tuple(width, height, scale, pos_threshold, neg_threshold) of gaussian parameters
+    num: number of samples
+    :return
+    bboxes: list of boxes
+            {
+                'img' :img,
+                'box'(x, y, w, h),
+                'label': label,
+                'overlap': overlap
+            }
+    """
+    assert len(bbox) == 4, "Invalid ground-truth(x, y, w, h) form."
+    assert bbox[2] > 0 and bbox[3] > 0, "Width or height < 0."
+    assert len(params) == 5, "Invalid {:d}-tuple params(should be five-tuple).".format(len(params))
+    assert num > 0, "Number of samples should be larger than 0."
+
+    im_shape = im.shape
+    im_w = im_shape[1]
+    im_h = im_shape[0]
+
+    # Calculate average of width and height
+    centerx = bbox[0] + bbox[2] / 2
+    centery = bbox[1] + bbox[3] / 2
+
+    bboxes = []
+    cur_id = 0
+    while cur_id < num:
+        # new box parameters
+        _mean = (bbox[2] + bbox[3]) / 2
+        offsetx = rd.gauss(0, params[0] * _mean)
+        offsety = rd.gauss(0, params[1] * _mean)
+        scalex = rd.gauss(1, params[2])
+        # scaley = rd.gauss(1, params[2])
+        scaley = scalex
+        # new box half width and half height
+        hw = bbox[2] * scalex / 2
+        hh = bbox[3] * scaley / 2
+        # box is in the form of (x1, y1, x2, y2)
+        box = (
+            max(0, centerx + offsetx - hw),
+            max(0, centery + offsety - hh),
+            min(im_w, centerx + offsetx + hw),
+            min(im_h, centery + offsety + hh)
+        )
+
+        # transform to (x, y, w, h)
+        sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
+        if int(sample[2]) <= 0 or int(sample[3]) <= 0:
+            continue
+        # since there is only one query box, then take the first one in the overlaps
+        overlap = bbox_overlaps([bbox], [sample])[0]
+        if overlap > params[3]:
+            bboxes.append({
+                'img': im,
+                'box': sample,
+                'label': 1,
+                'overlap': overlap
+            })
+        elif overlap < params[4]:
+            bboxes.append({
+                'img': im,
+                'box': sample,
+                'label': 0,
+                'overlap': overlap
+            })
+        else:
+            continue
+        cur_id += 1
     return bboxes
 
 
@@ -228,4 +305,4 @@ if __name__ == '__main__':
     im = cv2.imread(im_path)
     gt = gts[fd_map[2]][11]
 
-    bboxes = uniform_aspect_sample(im, gt, (0.3, 0.3, 10, 0.7, 0.5), 1000, stype='TEST')
+    bboxes = mdnet_sample(im, gt, (0.1, 0.1, 0.05, 0.7, 0.3), 500, stype='TEST')

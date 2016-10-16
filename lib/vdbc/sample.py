@@ -64,9 +64,9 @@ def uniform_aspect_sample(im, bbox, params, num, stype):
             min(im_w, int(cx + hw)),
             min(im_h, int(cy + hh))
         )
-        if box[0] == box[2] or box[1] == box[3]:
-            continue
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
+        if int(sample[2])<=0 or int(sample[3])<=0:
+            continue
         overlap = bbox_overlaps([bbox], [sample])[0]
         if overlap > params[3]:
             bboxes.append({
@@ -115,9 +115,9 @@ def uniform_sample(im, bbox, params, num, stype):
             min(im_w, int(cx + hw)),
             min(im_h, int(cy + hh))
         )
-        if box[0] == box[2] or box[1] == box[3]:
-            continue
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
+        if int(sample[2])<=0 or int(sample[3])<=0:
+            continue
         overlap = bbox_overlaps([bbox], [sample])[0]
         if overlap > params[3]:
             bboxes.append({
@@ -191,9 +191,9 @@ def gaussian_sample(im, bbox, params, num, stype):
             min(im_w, int(centerx + offsetx[i] + hw)),
             min(im_h, int(centery + offsety[i] + hh))
         )
-        if box[0] == box[2] or box[1] == box[3]:
-            continue
         sample = (box[0], box[1], box[2] - box[0], box[3] - box[1])
+        if int(sample[2])<=0 or int(sample[3])<=0:
+            continue
         overlap = bbox_overlaps([bbox], [sample])[0]
         if overlap > params[3]:
                 bboxes.append({

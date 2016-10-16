@@ -20,12 +20,10 @@ def get_image_blob(db, pixel_means):
             box = list(sample['box'])
             for i in range(len(box)):
                 box[i] = int(box[i])
-            im = copy.deepcopy(img[box[1]:box[1]+box[3], box[0]:box[0]+box[2]])
-
+            im = img[box[1]:box[1]+box[3], box[0]:box[0]+box[2]]
             im = prep_im_for_blob(im,
                                   cfg.TRAIN.INPUT_SIZE,
                                   cfg.TRAIN.INPUT_SIZE)
-
             processed_ims.append(im)
 
     blob = im_list_to_blob(processed_ims)

@@ -30,3 +30,5 @@ class Timer(object):
             return self.average_time
         else:
             return self.diff
+        
+

@@ -1,10 +1,10 @@
-__author__ = 'stephen'
+__author__ = 'raoqi'
 
 import cv2
 import numpy as np
 import re, random
 import os, copy, json
-from sample import gaussian_sample
+from sample import mdnet_sample
 
 
 class VDBC(object):
@@ -277,9 +277,12 @@ class VDBC(object):
             gt = video_gt[i]
             if gt is None:
                 continue
-
+                        
             im = cv2.imread(frame)
-            samples = gaussian_sample(im=im, bbox=gt, params=params, num=num)
+            if im is None:  # Avoid null exception
+                continue
+
+            samples = mdnet_sample(im=im, bbox=gt, params=params, num=num)
 
             for s in samples:
                 if s['label'] == 1:
@@ -321,7 +324,7 @@ class VDBC(object):
 
             im = cv2.imread(frame)
             if dtype == 'GAUSSIAN':
-                samples = gaussian_sample(im=im, bbox=gt, params=params, num=num)
+                samples = mdnet_sample(im=im, bbox=gt, params=params, num=num)
 
         # build data
         # samples is a list of boxes{'img':img, 'box': (x, y ,w, h), 'label':label}
@@ -359,7 +362,7 @@ class VDBC(object):
         img1 = cv2.imread(frame1)
         img2 = cv2.imread(frame2)
         # draw gaussian samples
-        rois = gaussian_sample(img2, gt2, params, im_per_pair_frame)
+        rois = mdnet_sample(img2, gt2, params, im_per_pair_frame)
         samples = [{
                        'box1': gt1,
                        'box2': bbox['box'],

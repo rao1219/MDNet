@@ -1,9 +1,9 @@
-__author__ = 'stephen'
+__author__ = 'raoqi'
 
 ####################################
-# Author: Zilin Zhang
-# Organization: Zhejiang University
-# City: Hangzhou
+# Author: Rao Qi
+# Organization: Beijing University of Posts and Telecommunications
+# City: Beijing
 # Description: The file contains
 # multiple sample methods
 ####################################
@@ -137,7 +137,7 @@ def uniform_sample(im, bbox, params, num, stype):
     return bboxes
 
 
-def gaussian_sample(im, bbox, params, num, stype):
+def gaussian_sample(im, bbox, params, num, stype='TRAIN'):
     assert len(bbox) == 4, "Invalid ground-truth(x, y, w, h) form."
     assert bbox[2] > 0 and bbox[3] > 0, "Width or height < 0."
     assert len(params) == 5, "Invalid {:d}-tuple params(should be five-tuple).".format(len(params))
@@ -183,7 +183,10 @@ def gaussian_sample(im, bbox, params, num, stype):
         ws = np.max(np.hstack((tens, w)), axis=1)
         hs = np.max(np.hstack((tens, h)), axis=1)
     bboxes = []
-    for i in range(num):
+    curr_id = 1
+    #for i in range(num):
+    while curr_id <=num:
+        i = curr_id - 1
         hw = ws[i] / 2
         hh = hs[i] / 2
         box = (
@@ -210,10 +213,13 @@ def gaussian_sample(im, bbox, params, num, stype):
                 'label': 0,
                 'overlap': overlap
             })
+        else:
+            continue
+        curr_id += 1
     return bboxes
 
 
-def mdnet_sample(im, bbox, params, num, stype):
+def mdnet_sample(im, bbox, params, num, stype='TRAIN'):
     """Generate gaussian samples based on bbox
     :arg
     im: cv2's image

@@ -1,15 +1,15 @@
-__author__ = 'raoqi'
+__author__ = 'stephen'
 
 import _init_paths
 import caffe
 import cv2, os
 import numpy as np
 import matplotlib.pyplot as plt
+from lib.utils.timer import Timer
 from lib.vdbc.dataset_factory import VDBC
 from lib.vdbc.evaluate import Evaluator
-from lib.vdbc.sample import gaussian_sample, uniform_aspect_sample, uniform_sample, mdnet_sample
+from lib.vdbc.sample import mdnet_sample
 from lib.utils.bbox import bbox_reg
-from lib.utils.timer import Timer
 
 from lib.data_layer.layer import get_next_mini_batch
 
@@ -18,23 +18,17 @@ caffe.set_device(0)
 # get the deploy solver and net with pre-trained caffe model
 train = os.path.join('model', 'deploy_solver.prototxt')
 test = os.path.join('model', 'deploy_test.prototxt')
-weights = os.path.join('model', 'MDNet-fulltrain_iter_7960320.caffemodel')
+weights = os.path.join('model', 'MDNet_iter_4171776.caffemodel')
 
-TEST_PARAMS = [0.1, 0.1, 0.05, 0.7, 0.3]
-POS_PARAMS = [0.1, 0.1, 0.05, 0.7, 0.3]
-NEG_PARAMS = [2, 2, 5,0.05, 0.3]
-INIT_POS_PARAMS = [0.1, 0.1, 0.05, 0.7, 0.5]
-INIT_NEG_PARAMS = [1, 1, 0.1, 0.7, 0.5]
-INIT_TRAIN_FRAME = 3000
+PARAMS = (0.3, 0.3, 0.05, 0.7, 0.3)
+INIT_TRAIN_FRAME = 5500
+IMS_PER_FRAME = 256
 
-IMS_PER_FRAME = 40 
-#IMS_PER_FRAME = 256 + 128
 threshold = 0.5
 
-VISUAL = False
+VISUAL = True
 BBOX_REG = True
 
-timer = Timer()
 
 def vis_detection(im_path, gt, box):
     im = cv2.imread(im_path)[:, :, (2, 1, 0)]
@@ -62,22 +56,7 @@ def vis_detection(im_path, gt, box):
     )
 
     plt.show()
-#    time.sleep(1)
-    plt.close()
 
-def mean(topInds, scores, samples):
-    score = 0.
-    targetLoc = [0., 0., 0., 0.]
-    for i in range(5):
-        ind = topInds[i]
-        score += scores[ind]
-        box = samples[ind]['box']
-        for j in range(4):
-            targetLoc[j] += box[j]
-    score /= 5
-    for i in range(4):
-        targetLoc[i] /= 5
-    return score, targetLoc
 
 def get_solver_net(train, test, weights):
     solver = caffe.SGDSolver(train)
@@ -124,71 +103,52 @@ def finetune(solver, frame_samples, seq):
     timer.tic()
     db = []
     for ind in seq:
-        try:
-            samples = frame_samples[ind]
-            for i in range(len(samples)):
-                db.append({
-                'img': samples[i]['img'],
-                'samples': [samples[i]]
-            })
-        except Exception:
-            print 'False {} index in sequences finetune'.format(ind)
-            pass
+        samples = frame_samples[ind]
+        for i in range(len(samples)):
+            db.append({
+            'img': samples[i]['img'],
+            'samples': [samples[i]]
+        })
     solver.net.layers[0].get_db(db)
     solver.step(1000)
     timer.toc()
     
     print 'Finetune takes {} seconds'.format(timer.diff)
 
+
 def evaluate(evl, solver, net):
-    frame_samples = []
+    samples = []
     db = []
-    
-    timer.tic()
+
     im_path, gt = evl.init_frame()
     im = cv2.imread(im_path)
-    
-    pos_samples = mdnet_sample(im, gt, INIT_POS_PARAMS, 1000, stype='TEST')
-    pos_samples = [sample for sample in pos_samples if sample['label']==1]
-    neg_samples = mdnet_sample(im, gt, INIT_NEG_PARAMS, 5000, stype='TEST')
-    neg_samples = [sample for sample in neg_samples if sample['label']==0]
-    samples = pos_samples + neg_samples
-    frame_samples.append(samples)
-    for i in range(len(samples)):
+    frame_samples = mdnet_sample(im, gt, PARAMS, INIT_TRAIN_FRAME,'TEST')
+    for i in range(len(frame_samples)):
         db.append({
+            'path': im_path,
             'img': im,
-            'samples': [samples[i]]
+            'samples': [frame_samples[i]]
         })
     solver.net.layers[0].get_db(db)
-    solver.step(INIT_TRAIN_FRAME)
-    timer.toc()
-    print 'Pre-training takes {} seconds.'.format(timer.diff)
-    
+    solver.step(5000)
     if BBOX_REG:
-        timer.tic()
-        regressor = train_bbox_regression(net, im, gt, samples)
-        timer.toc()
-        print 'BBox regression training takes {} seconds.'.format(timer.diff)
+        regressor = train_bbox_regression(net, im, gt, frame_samples)
 
     long_term = [0]
     short_term = [0]
-#    long_term = []
-#    short_term = []
     term = 0
     # Begin testing
-    total_timer = Timer()
-    total_timer.tic()
     im_path = evl.next_frame()
     while im_path is not None:
-        print '--------------------------------------------'
-        timer.tic()
         term += 1
         im = cv2.imread(im_path)
-        samples = mdnet_sample(im, gt, TEST_PARAMS, IMS_PER_FRAME, stype='TEST')
-        
-        scores = np.zeros(len(samples), dtype=np.float64)
+        samples = mdnet_sample(im, gt, PARAMS, IMS_PER_FRAME,'TEST')
+#        print 'len of samples:','\t',samples.__len__()
+#        frame_samples.append(samples)
+
+        scores = np.zeros(IMS_PER_FRAME, dtype=np.float64)
         feats = []
-        for i in range(len(samples)):
+        for i in range(IMS_PER_FRAME):#Todo: test the avaliation of guassian_sample
             db = [{
                 'path': im_path,
                 'img': im,
@@ -198,69 +158,47 @@ def evaluate(evl, solver, net):
             blob = {'data': blob['data']}
             net.blobs['data'].reshape(*blob['data'].shape)
             out = net.forward(**blob)['cls_prob']
-            scores[i] = out[0, 1]
+            scores[i] = out[0][1]
+         #   print i,'\t',out,'\t',scores[i]
             feats.append(net.blobs['pool3'].data[0])
-
         ind = np.argmax(scores)
-        topInds = np.argsort(scores)[::-1]
-        score, targetLoc = mean(topInds, scores, samples)
-#         score = scores[topInds[0]]
-#         targetLoc = samples[topInds[0]]['box']
-        box = np.array(targetLoc)[np.newaxis, :]
+        score = scores[ind]
+        box = np.array(samples[ind]['box']).reshape((1, 4))
 
         if score > threshold:
-            TEST_PARAMS[0] = 0.1
-            TEST_PARAMS[1] = 0.1
-            
             long_term.append(term)
             short_term.append(term)
-            pos_samples = mdnet_sample(im, targetLoc, POS_PARAMS, 100, stype='TEST')
-            pos_samples = [sample for sample in pos_samples if sample['label']==1]
-            neg_samples = mdnet_sample(im, targetLoc, NEG_PARAMS, 400, stype='TEST')
-            pos_samples = [sample for sample in pos_samples if sample['label']==0]
-            frame_samples.append(pos_samples + neg_samples)
-            
             if len(long_term) >= 100:
                 long_term = long_term[-100:]
-            if len(short_term) >= 10:
-                short_term = short_term[-10:]
+            if len(short_term) >= 20:
+                short_term = short_term[-20:]
             feat = feats[ind]
             feat = feat.reshape((1, feat.size))
             if BBOX_REG:
-#                 print 'pre:', box
                 box = regressor.predict(feat, box)
-#                 print 'after:', box
-        timer.toc()
-        print 'Prediction takes {} seconds'.format(timer.diff)
 
-        print 'score: {}'.format(score)
         if score < threshold:
-            TEST_PARAMS[0] = 1.1 * TEST_PARAMS[0]
-            TEST_PARAMS[1] = 1.1 * TEST_PARAMS[1]
+            print 'finetune:'
             finetune(solver, frame_samples, short_term)
-            frame_samples.append([])
-        elif term % 20 == 0:
+        elif term % 10 == 0:
+            print 'finetune:'
             finetune(solver, frame_samples, long_term)
 
         evl.report(box.reshape((4, )))
         gt = box.reshape((4, ))
 
-        if VISUAL or score < threshold:
+        if VISUAL:
             ground_truth = evl.get_ground_truth()
             vis_detection(im_path, ground_truth, gt)
 
         im_path = evl.next_frame()
-    total_timer.toc()
-    print 'Total time {} seconds for {} pictures.'.format(total_timer.diff, term)
-    print 'mAP: {}.'.format(evl.get_mAP())
-
 
 if __name__ == '__main__':
     solver, net = get_solver_net(train, test, weights)
 
     # get the Evaluator
-    dtype = 'OTB'
-    dbpath = os.path.join('data', 'OTB','data')
+    dtype = 'VOT'
+    dbpath = os.path.join('data', 'VOT')
     gtpath = dbpath
 
     vdbc = VDBC(dbtype=dtype, dbpath=dbpath, gtpath=gtpath, flush=True)
@@ -268,7 +206,5 @@ if __name__ == '__main__':
 
     video_num = evl.get_video_num()
     print 'Total video sequences: {}.'.format(video_num)
-#    for i in range(video_num):
-#        evaluate(evl, solver, net)
-    evl.set_video(6)
-    evaluate(evl,solver,net)
+    for i in range(video_num):
+        evaluate(evl, solver, net)

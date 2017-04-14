@@ -1,4 +1,4 @@
-train_net: "/home/sigcv/Workspace/MDNet/model/deploy_train.prototxt"
+train_net: "./model/deploy_train.prototxt"
 base_lr: 0.000001
 lr_policy: "step"
 gamma: 0.1

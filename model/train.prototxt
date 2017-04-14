@@ -7,7 +7,7 @@ layer {
   python_param {
     module: 'lib.data_layer.layer'
     layer: 'DataLayer'
-    param_str: "'num_class': 41"
+    param_str: "'num_class': 49"
   }
 }
 layer {
@@ -93,10 +93,10 @@ layer {
 layer {
   bottom: "pool2"
   top: "conv3"
-  name: "conv_3"
+  name: "conv3"
   type: "Convolution"
   convolution_param {
-    num_output: 256
+    num_output: 512
     kernel_size: 3
     weight_filler{
        type: "gaussian"
@@ -188,7 +188,7 @@ layer {
   param {lr_mult: 10}
   param {lr_mult: 20}
   inner_product_param {
-    num_output: 82 
+    num_output: 98 
     weight_filler {
       type: "xavier"
       std: 0.01
@@ -205,7 +205,7 @@ layer {
     shape {
       dim: 0
       dim: 1
-      dim: 41
+      dim: 49
       dim: 1
     }
   }
@@ -219,7 +219,7 @@ layer {
     shape {
       dim: 0
       dim: 2
-      dim: 41
+      dim: 49
       dim: 1
     }
   }

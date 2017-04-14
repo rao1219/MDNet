@@ -1,5 +1,6 @@
 __author__ = 'stephen'
 
+import _init_paths
 import caffe
 import cv2, os
 import numpy as np
@@ -92,13 +93,13 @@ if __name__ == '__main__':
     # get the deploy solver and net with pre-trained caffe model
     train = os.path.join('model', 'deploy_solver.prototxt')
     test = os.path.join('model', 'deploy_test.prototxt')
-    weights = os.path.join('model', 'MDNet_iter_800000.caffemodel')
+    weights = os.path.join('model', 'MDNet_iter_4171776.caffemodel')
 
     solver, net = get_solver_net(train, test, weights)
 
     # get the Evaluator
     dtype = 'VOT'
-    dbpath = os.path.join('data', 'vot2014')
+    dbpath = os.path.join('data', 'VOT')
     gtpath = dbpath
 
     vdbc = VDBC(dbtype=dtype, dbpath=dbpath, gtpath=gtpath, flush=True)

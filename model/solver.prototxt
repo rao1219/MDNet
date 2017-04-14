@@ -1,4 +1,4 @@
-train_net: "/home/sigcv/Workspace/MDNet/model/train.prototxt"
+train_net: "./model/train.prototxt"
 base_lr: 0.0000001
 lr_policy: "step"
 gamma: 0.1
@@ -6,6 +6,6 @@ stepsize: 3000000
 display: 1000
 average_loss: 100
 
-snapshot_prefix: "MDNet"
+snapshot_prefix: "MDNet-otb"
 momentum: 0.9
 weight_decay: 0.0005

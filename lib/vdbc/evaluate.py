@@ -1,4 +1,4 @@
-__author__ = 'stephen'
+__author__ = 'raoqi'
 
 from dataset_factory import VDBC
 from lib.utils.bbox import bbox_overlaps

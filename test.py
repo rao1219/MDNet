@@ -12,13 +12,14 @@ from lib.utils.bbox import bbox_reg
 from lib.utils.timer import Timer
 
 from lib.data_layer.layer import get_next_mini_batch
+from lib.recorder import Recorder
 
 caffe.set_mode_gpu()
 caffe.set_device(0)
 # get the deploy solver and net with pre-trained caffe model
 train = os.path.join('model', 'deploy_solver.prototxt')
 test = os.path.join('model', 'deploy_test.prototxt')
-weights = os.path.join('model', 'MDNet-fulltrain_iter_7960320.caffemodel')
+weights = os.path.join('model', 'MDNet-otb_iter_6867968.caffemodel')
 
 TEST_PARAMS = [0.1, 0.1, 0.05, 0.7, 0.3]
 POS_PARAMS = [0.1, 0.1, 0.05, 0.7, 0.3]
@@ -27,15 +28,18 @@ INIT_POS_PARAMS = [0.1, 0.1, 0.05, 0.7, 0.5]
 INIT_NEG_PARAMS = [1, 1, 0.1, 0.7, 0.5]
 INIT_TRAIN_FRAME = 3000
 
-IMS_PER_FRAME = 40 
-#IMS_PER_FRAME = 256 + 128
+#IMS_PER_FRAME = 40 
+IMS_PER_FRAME = 256 + 128
 threshold = 0.5
 
-VISUAL = False
+VISUAL = True
+STVISUAL = 10
 BBOX_REG = True
 
 timer = Timer()
+record = Recorder()
 
+    
 def vis_detection(im_path, gt, box):
     im = cv2.imread(im_path)[:, :, (2, 1, 0)]
     plt.cla()
@@ -140,7 +144,7 @@ def finetune(solver, frame_samples, seq):
     
     print 'Finetune takes {} seconds'.format(timer.diff)
 
-def evaluate(evl, solver, net):
+def evaluate(evl, solver, net, sample_num):
     frame_samples = []
     db = []
     
@@ -172,6 +176,7 @@ def evaluate(evl, solver, net):
 
     long_term = [0]
     short_term = [0]
+    finetune_iter_ = 0
 #    long_term = []
 #    short_term = []
     term = 0
@@ -184,7 +189,7 @@ def evaluate(evl, solver, net):
         timer.tic()
         term += 1
         im = cv2.imread(im_path)
-        samples = mdnet_sample(im, gt, TEST_PARAMS, IMS_PER_FRAME, stype='TEST')
+        samples = mdnet_sample(im, gt, TEST_PARAMS, sample_num, stype='TEST')
         
         scores = np.zeros(len(samples), dtype=np.float64)
         feats = []
@@ -235,40 +240,53 @@ def evaluate(evl, solver, net):
 
         print 'score: {}'.format(score)
         if score < threshold:
+            finetune_iter_ +=1
             TEST_PARAMS[0] = 1.1 * TEST_PARAMS[0]
             TEST_PARAMS[1] = 1.1 * TEST_PARAMS[1]
             finetune(solver, frame_samples, short_term)
             frame_samples.append([])
         elif term % 20 == 0:
+            finetune_iter_ +=1
             finetune(solver, frame_samples, long_term)
+            record._save_json()
 
-        evl.report(box.reshape((4, )))
+        overlap_ = evl.report(box.reshape((4, )))
         gt = box.reshape((4, ))
 
-        if VISUAL or score < threshold:
-            ground_truth = evl.get_ground_truth()
-            vis_detection(im_path, ground_truth, gt)
-
-        im_path = evl.next_frame()
+        record.add_overlap(sample_num,overlap_)
+#        if VISUAL or score < threshold or (STVISUAL is not 0 and term % STVISUAL == 0):
+#            ground_truth = evl.get_ground_truth()
+#            vis_detection(im_path, ground_truth, gt)
+        if term % 200 == 0:
+            break
+        else:
+            im_path = evl.next_frame()
     total_timer.toc()
     print 'Total time {} seconds for {} pictures.'.format(total_timer.diff, term)
     print 'mAP: {}.'.format(evl.get_mAP())
+    
+    record.add_record(sample_num=sample_num,frame_num=term, mAP=evl.get_mAP(), total_time=total_timer.diff, finetune_iter=finetune_iter_)
+    record._save_json()
 
 
 if __name__ == '__main__':
-    solver, net = get_solver_net(train, test, weights)
 
-    # get the Evaluator
-    dtype = 'OTB'
-    dbpath = os.path.join('data', 'OTB','data')
-    gtpath = dbpath
+    while IMS_PER_FRAME > 20:
+        solver, net = get_solver_net(train, test, weights)
 
-    vdbc = VDBC(dbtype=dtype, dbpath=dbpath, gtpath=gtpath, flush=True)
-    evl = Evaluator(vdbc)
+        # get the Evaluator
+        dtype = 'VOT'
+        dbpath = os.path.join('data', 'VOT')
+        gtpath = dbpath
 
-    video_num = evl.get_video_num()
-    print 'Total video sequences: {}.'.format(video_num)
-#    for i in range(video_num):
-#        evaluate(evl, solver, net)
-    evl.set_video(6)
-    evaluate(evl,solver,net)
+        vdbc = VDBC(dbtype=dtype, dbpath=dbpath, gtpath=gtpath, flush=True)
+        evl = Evaluator(vdbc)
+
+        video_num = evl.get_video_num()
+        print 'Total video sequences: {}.'.format(video_num)
+    #    for i in range(video_num):
+    #        evaluate(evl, solver, net)
+        
+        evl.set_video(19)
+        evaluate(evl,solver,net,IMS_PER_FRAME)
+        IMS_PER_FRAME -= 10

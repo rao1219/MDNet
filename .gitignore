@@ -101,3 +101,6 @@ lib/utils/*.jpg
 
 test.ipynb
 train.ipynb
+
+res.json
+overlap.json

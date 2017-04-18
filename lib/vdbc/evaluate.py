@@ -61,6 +61,7 @@ class Evaluator(object):
         overlap = bbox_overlaps([gt], [bbox])[0]
         print '{}: overlap: {}'.format(self._cur-1, overlap)
         self._overlaps[self._video_name].append(overlap)
+        return overlap
 
     def init_frame(self):
         """tracker calls this function to get the necessary frame and ground-truth to initialize.
